@@ -283,14 +283,16 @@
         MOUSTACHE DSP <span>DSP v1.0</span>
       </div>
       <div class="file-controls">
-        <input type="file" id="audio-input" accept="audio/*" style="display: none;">
-        <button class="btn" onclick="document.getElementById('audio-input').click()">
-          📂 Cargar Audio
-        </button>
-        <button class="btn btn-primary" id="export-btn" disabled>
-          💾 Exportar WAV
-        </button>
-      </div>
+    <!-- Usamos un <label> estilizado como botón para abrir el selector de archivos directamente -->
+    <label for="audio-input" class="btn">
+        📂 Cargar Audio
+    </label>
+    <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .flac, .m4a, .aac, .ogg" style="display: none;">
+    
+    <button class="btn btn-primary" id="export-btn" disabled>
+        💾 Exportar WAV
+    </button>
+</div>
     </header>
 
     <div class="visualizer-card">
