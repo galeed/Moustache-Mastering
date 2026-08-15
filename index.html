@@ -458,19 +458,35 @@
       }
       // File Loading
       document.getElementById('audio-input').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        initAudioContext();
-        document.getElementById('track-name').textContent = file.name;
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Inicializar Contexto de Audio tras interacción explícita
+    initAudioContext();
+    if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+    }
+
+    document.getElementById('track-name').textContent = file.name;
+
+    try {
         const arrayBuffer = await file.arrayBuffer();
         audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Habilitar controles de transporte
         document.getElementById('play-btn').disabled = false;
         document.getElementById('stop-btn').disabled = false;
         document.getElementById('export-btn').disabled = false;
         document.getElementById('seek-bar').disabled = false;
+
         updateTimeDisplay();
         drawSpectrum();
-      });
+    } catch (err) {
+        alert("Error al decodificar el archivo de audio. Intenta con otro formato.");
+        console.error(err);
+    }
+});
+
       // Transport Functions
       function playAudio() {
         if (isPlaying) return;
