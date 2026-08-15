@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hybrid Studio Console - Classic & Hardstyle DSP</title>
+    <title>Hybrid Studio Console - Fix Audio Loader</title>
     <style>
         :root {
             --bg-color: #0b0c0e;
             --panel-bg: #13151b;
             --panel-border: #222631;
-            --knob-track: #1b1e28;
             --accent-orange: #ff5500;
             --accent-cyan: #00e5ff;
-            --accent-red: #ff0055;
             --text-main: #d1d5db;
             --text-muted: #6b7280;
         }
@@ -128,123 +126,6 @@
             font-family: monospace;
         }
 
-        .section-toggle-bar {
-            display: flex;
-            gap: 8px;
-        }
-
-        .toggle-btn {
-            flex: 1;
-            padding: 10px;
-            background: #161922;
-            border: 1px solid var(--panel-border);
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .toggle-btn.active {
-            background: #202533;
-            color: var(--text-main);
-            border-color: var(--accent-cyan);
-        }
-
-        .toggle-btn.active.hardstyle-tab {
-            border-color: var(--accent-orange);
-        }
-
-        .toggle-btn .badge {
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: #0d0e12;
-        }
-
-        .dsp-section {
-            display: none;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 10px;
-            flex: 1;
-        }
-
-        .dsp-section.visible { display: grid; }
-
-        .channel-strip {
-            background: linear-gradient(180deg, #151821 0%, #101218 100%);
-            border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .strip-header {
-            font-size: 0.75rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: var(--accent-cyan);
-            border-bottom: 1px solid var(--panel-border);
-            padding-bottom: 6px;
-        }
-
-        .strip-header.hard { color: var(--accent-orange); }
-        .strip-header.vintage { color: #ffaa00; }
-
-        .controls-matrix {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .fader-cell {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .fader-label {
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-            text-transform: uppercase;
-        }
-
-        .fader-val {
-            color: var(--text-main);
-            font-family: monospace;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 8px;
-            background: var(--knob-track);
-            border-radius: 4px;
-            outline: none;
-            border: 1px solid #232734;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-            background: linear-gradient(180deg, #4b5563 0%, #1f2937 100%);
-            border: 1px solid var(--accent-cyan);
-            cursor: pointer;
-        }
-
-        .hard input[type="range"]::-webkit-slider-thumb { border-color: var(--accent-orange); }
-
         .transport-strip {
             background: #13151b;
             border: 1px solid var(--panel-border);
@@ -253,9 +134,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            position: sticky;
-            bottom: 0;
-            z-index: 100;
         }
 
         .btn-play {
@@ -272,20 +150,15 @@
             justify-content: center;
             cursor: pointer;
         }
-
-        @media (max-width: 600px) {
-            body { padding: 6px; }
-            .dsp-section { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand">MOUSTACHE <span>HYBRID DSP</span></div>
+        <div class="brand">MOUSTACHE <span>AUDIO LOADER FIX</span></div>
         <div class="btn-rack">
-            <input type="file" id="audio-input" accept="audio/*" style="display:none;">
-            <button class="btn" id="btn-load-file">📂 Cargar</button>
+            <input type="file" id="audio-input" accept="audio/*">
+            <button class="btn" id="btn-load-file">📂 Seleccionar Audio</button>
             
             <select id="export-sample-rate" class="export-select">
                 <option value="44100">44.1 kHz</option>
@@ -305,123 +178,8 @@
     <div class="console-screen">
         <canvas id="spectrum"></canvas>
         <div class="screen-info">
-            <span id="track-title">SISTEMA LISTO</span>
-            <span id="time-display">00:00 / 00:00</span>
-        </div>
-    </div>
-
-    <div class="section-toggle-bar">
-        <button class="toggle-btn active" id="tab-classic" onclick="switchTab('classic')">
-            EFECTOS CLÁSICOS <span class="badge">4 MÓDULOS</span>
-        </button>
-        <button class="toggle-btn hardstyle-tab" id="tab-hardstyle" onclick="switchTab('hardstyle')">
-            HARDSTYLE <span class="badge">3 MÓDULOS</span>
-        </button>
-    </div>
-
-    <!-- SECTION 1: EFECTOS CLÁSICOS -->
-    <div class="dsp-section visible" id="sec-classic">
-        <div class="channel-strip">
-            <div class="strip-header">1. EQ PARAMÉTRICO</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Low Cut <span class="fader-val" id="v-hpf">30 Hz</span></div>
-                    <input type="range" id="hpf" min="20" max="120" value="30">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Low Shelf <span class="fader-val" id="v-ls">0 dB</span></div>
-                    <input type="range" id="ls" min="-12" max="12" value="0" step="0.5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Mid Bell <span class="fader-val" id="v-mid">0 dB</span></div>
-                    <input type="range" id="mid" min="-12" max="12" value="0" step="0.5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">High Shelf <span class="fader-val" id="v-hs">0 dB</span></div>
-                    <input type="range" id="hs" min="-12" max="12" value="0" step="0.5">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip">
-            <div class="strip-header">2. SATURACIÓN & COMPRESIÓN</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Saturación <span class="fader-val" id="v-sat">0 %</span></div>
-                    <input type="range" id="sat" min="0" max="100" value="0">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Threshold <span class="fader-val" id="v-thresh">-12 dB</span></div>
-                    <input type="range" id="thresh" min="-40" max="0" value="-12">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Ratio <span class="fader-val" id="v-ratio">2:1</span></div>
-                    <input type="range" id="ratio" min="1" max="10" value="2" step="0.5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Ataque <span class="fader-val" id="v-attack">30 ms</span></div>
-                    <input type="range" id="attack" min="1" max="100" value="30">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip">
-            <div class="strip-header">3. LIMITADOR & OUTPUT</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Ceiling <span class="fader-val" id="v-ceiling">-0.3 dB</span></div>
-                    <input type="range" id="ceiling" min="-3" max="0" value="-0.3" step="0.1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Ganancia <span class="fader-val" id="v-gain">0 dB</span></div>
-                    <input type="range" id="gain" min="-12" max="12" value="0" step="0.5">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip">
-            <div class="strip-header vintage">4. CINTA & VINILO</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Sat. Cinta <span class="fader-val" id="v-tape-sat">0 %</span></div>
-                    <input type="range" id="tape-sat" min="0" max="100" value="0">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Wow/Flutter <span class="fader-val" id="v-flutter">0 %</span></div>
-                    <input type="range" id="flutter" min="0" max="100" value="0">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Filtro Cálido <span class="fader-val" id="v-warmth">20 kHz</span></div>
-                    <input type="range" id="warmth" min="5000" max="20000" value="20000" step="250">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SECTION 2: HARDSTYLE DSP -->
-    <div class="dsp-section" id="sec-hardstyle">
-        <div class="channel-strip hard">
-            <div class="strip-header hard">1. HARD CLIPPER</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Clip Drive <span class="fader-val" id="v-clip">0 dB</span></div>
-                    <input type="range" id="clip-drive" min="0" max="18" value="0" step="0.5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Clip Ceiling <span class="fader-val" id="v-clip-ceil">-0.1 dB</span></div>
-                    <input type="range" id="clip-ceil" min="-3" max="0" value="-0.1" step="0.1">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip hard">
-            <div class="strip-header hard">2. BASS CONTROL</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Sub Comp <span class="fader-val" id="v-lowcomp">0 dB</span></div>
-                    <input type="range" id="low-comp" min="-30" max="0" value="0" step="1">
-                </div>
-            </div>
+            <span id="track-title">ESPERANDO ARCHIVO DE AUDIO...</span>
+            <span id="status-text">ESTADO: INACTIVO</span>
         </div>
     </div>
 
@@ -432,150 +190,91 @@
 
     <script>
         let audioCtx, audioBuffer, sourceNode, isPlaying = false, startTime = 0, pauseOffset = 0;
-        let inputGainNode, hpfFilter, lowShelfFilter, midFilter, highShelfFilter;
-        let saturatorNode, compressorNode, limiterNode;
-        let tapeSaturatorNode, tapeDelayNode, wowLfoNode, wowLfoGainNode, vinylFilterNode;
-        let hardClipperNode, lowCompNode, analyserNode;
+        let analyserNode;
 
         const canvas = document.getElementById('spectrum');
         const canvasCtx = canvas.getContext('2d');
+        const trackTitle = document.getElementById('track-title');
+        const statusText = document.getElementById('status-text');
 
-        // Accordion Tab Switcher
-        function switchTab(tab) {
-            document.getElementById('sec-classic').classList.remove('visible');
-            document.getElementById('sec-hardstyle').classList.remove('visible');
-            document.getElementById('tab-classic').classList.remove('active');
-            document.getElementById('tab-hardstyle').classList.remove('active');
-
-            if (tab === 'classic') {
-                document.getElementById('sec-classic').classList.add('visible');
-                document.getElementById('tab-classic').classList.add('active');
-            } else {
-                document.getElementById('sec-hardstyle').classList.add('visible');
-                document.getElementById('tab-hardstyle').classList.add('active');
-            }
-        }
-
-        function initAudioContext() {
+        // Inicialización garantizada mediante gesto del usuario
+        async function ensureAudioContext() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                setupDSPChain();
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContextClass();
+                
+                analyserNode = audioCtx.createAnalyser();
+                analyserNode.fftSize = 1024;
+                analyserNode.connect(audioCtx.destination);
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        function setupDSPChain() {
-            inputGainNode = audioCtx.createGain();
-
-            hpfFilter = audioCtx.createBiquadFilter(); hpfFilter.type = 'highpass'; hpfFilter.frequency.value = 30;
-            lowShelfFilter = audioCtx.createBiquadFilter(); lowShelfFilter.type = 'lowshelf'; lowShelfFilter.frequency.value = 100;
-            midFilter = audioCtx.createBiquadFilter(); midFilter.type = 'peaking'; midFilter.frequency.value = 2500;
-            highShelfFilter = audioCtx.createBiquadFilter(); highShelfFilter.type = 'highshelf'; highShelfFilter.frequency.value = 8000;
-            
-            saturatorNode = audioCtx.createWaveShaper();
-            compressorNode = audioCtx.createDynamicsCompressor();
-            
-            tapeSaturatorNode = audioCtx.createWaveShaper();
-            tapeDelayNode = audioCtx.createDelay(); tapeDelayNode.delayTime.value = 0.02;
-            wowLfoNode = audioCtx.createOscillator(); wowLfoNode.frequency.value = 1.8;
-            wowLfoGainNode = audioCtx.createGain(); wowLfoGainNode.gain.value = 0;
-            wowLfoNode.connect(wowLfoGainNode); wowLfoGainNode.connect(tapeDelayNode.delayTime); wowLfoNode.start();
-            vinylFilterNode = audioCtx.createBiquadFilter(); vinylFilterNode.type = 'lowpass'; vinylFilterNode.frequency.value = 20000;
-
-            hardClipperNode = audioCtx.createWaveShaper();
-            updateHardClipper(0, -0.1);
-
-            lowCompNode = audioCtx.createDynamicsCompressor();
-            lowCompNode.threshold.value = 0;
-
-            limiterNode = audioCtx.createDynamicsCompressor();
-            limiterNode.threshold.value = -0.3; limiterNode.ratio.value = 20;
-
-            analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 1024;
-
-            // Continuous Processing Chain
-            inputGainNode.connect(hpfFilter);
-            hpfFilter.connect(lowShelfFilter);
-            lowShelfFilter.connect(midFilter);
-            midFilter.connect(highShelfFilter);
-            highShelfFilter.connect(saturatorNode);
-            saturatorNode.connect(compressorNode);
-            compressorNode.connect(tapeSaturatorNode);
-            tapeSaturatorNode.connect(tapeDelayNode);
-            tapeDelayNode.connect(vinylFilterNode);
-            vinylFilterNode.connect(hardClipperNode);
-            hardClipperNode.connect(lowCompNode);
-            lowCompNode.connect(limiterNode);
-            limiterNode.connect(analyserNode);
-            analyserNode.connect(audioCtx.destination);
-        }
-
-        function updateSaturationCurve(node, val) {
-            if (!node) return;
-            if (val <= 0) { node.curve = null; return; }
-            let k = val, n = 44100, curve = new Float32Array(n), deg = Math.PI / 180;
-            for (let i = 0; i < n; ++i) {
-                let x = i * 2 / n - 1;
-                curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
             }
-            node.curve = curve;
         }
 
-        function updateHardClipper(driveDb, ceilingDb) {
-            if (!hardClipperNode) return;
-            const samples = 44100;
-            const curve = new Float32Array(samples);
-            const drive = Math.pow(10, driveDb / 20);
-            const ceil = Math.pow(10, ceilingDb / 20);
-            for (let i = 0; i < samples; ++i) {
-                let x = (i * 2) / samples - 1;
-                let y = x * drive;
-                if (y > ceil) y = ceil;
-                if (y < -ceil) y = -ceil;
-                curve[i] = y;
-            }
-            hardClipperNode.curve = curve;
-        }
-
-        // File Load Listener
-        document.getElementById('btn-load-file').addEventListener('click', () => {
+        // Evento de clic en el botón personalizado
+        document.getElementById('btn-load-file').addEventListener('click', async () => {
+            await ensureAudioContext();
             document.getElementById('audio-input').click();
         });
 
+        // Decodificación compatible (Safari / Chrome / Firefox)
         document.getElementById('audio-input').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            initAudioContext();
-            document.getElementById('track-title').textContent = file.name.toUpperCase();
+            statusText.textContent = "ESTADO: CARGANDO ARCHIVO...";
+            trackTitle.textContent = file.name.toUpperCase();
 
-            const arrayBuffer = await file.arrayBuffer();
-            audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            try {
+                await ensureAudioContext();
+                const arrayBuffer = await file.arrayBuffer();
 
-            document.getElementById('play-btn').disabled = false;
-            document.getElementById('export-btn').disabled = false;
-            document.getElementById('seek-bar').disabled = false;
-            drawSpectrum();
+                // Promisificación compatible con navegadores antiguos / Safari
+                audioBuffer = await new Promise((resolve, reject) => {
+                    audioCtx.decodeAudioData(
+                        arrayBuffer,
+                        (decodedData) => resolve(decodedData),
+                        (error) => reject(error)
+                    );
+                });
+
+                statusText.textContent = "ESTADO: LISTO PARA REPRODUCIR";
+                document.getElementById('play-btn').disabled = false;
+                document.getElementById('export-btn').disabled = false;
+                document.getElementById('seek-bar').disabled = false;
+                
+                drawSpectrum();
+            } catch (err) {
+                console.error("Error al procesar el archivo de audio:", err);
+                statusText.textContent = "ERROR: FORMATO NO SOPORTADO";
+                alert("Ocurrió un error al cargar o decodificar el archivo. Asegúrate de seleccionar un archivo WAV, MP3, AAC o FLAC válido.");
+            }
         });
 
         function playAudio() {
-            if (isPlaying) return;
+            if (isPlaying || !audioBuffer) return;
+            
             sourceNode = audioCtx.createBufferSource();
             sourceNode.buffer = audioBuffer;
-            sourceNode.connect(inputGainNode);
+            sourceNode.connect(analyserNode);
+            
             sourceNode.start(0, pauseOffset);
             startTime = audioCtx.currentTime - pauseOffset;
             isPlaying = true;
             document.getElementById('play-btn').textContent = '⏸';
+            statusText.textContent = "ESTADO: REPRODUCIENDO";
+            
             requestAnimationFrame(updateProgress);
         }
 
         function pauseAudio() {
-            if (!isPlaying) return;
+            if (!isPlaying || !sourceNode) return;
             sourceNode.stop();
             pauseOffset = audioCtx.currentTime - startTime;
             isPlaying = false;
             document.getElementById('play-btn').textContent = '▶';
+            statusText.textContent = "ESTADO: PAUSADO";
         }
 
         document.getElementById('play-btn').addEventListener('click', () => {
@@ -589,6 +288,7 @@
                 isPlaying = false;
                 pauseOffset = 0;
                 document.getElementById('play-btn').textContent = '▶';
+                statusText.textContent = "ESTADO: FINALIZADO";
                 return;
             }
             document.getElementById('seek-bar').value = (current / audioBuffer.duration) * 100;
@@ -596,8 +296,9 @@
         }
 
         function drawSpectrum() {
-            requestAnimationFrame(drawSpectrum);
             if (!analyserNode) return;
+            requestAnimationFrame(drawSpectrum);
+            
             const buffer = analyserNode.frequencyBinCount;
             const data = new Uint8Array(buffer);
             analyserNode.getByteFrequencyData(data);
@@ -617,30 +318,11 @@
             }
         }
 
-        // CONTROL BINDINGS CLASSIC
-        document.getElementById('hpf').addEventListener('input', (e) => { hpfFilter.frequency.value = e.target.value; document.getElementById('v-hpf').textContent = e.target.value + ' Hz'; });
-        document.getElementById('ls').addEventListener('input', (e) => { lowShelfFilter.gain.value = e.target.value; document.getElementById('v-ls').textContent = e.target.value + ' dB'; });
-        document.getElementById('mid').addEventListener('input', (e) => { midFilter.gain.value = e.target.value; document.getElementById('v-mid').textContent = e.target.value + ' dB'; });
-        document.getElementById('hs').addEventListener('input', (e) => { highShelfFilter.gain.value = e.target.value; document.getElementById('v-hs').textContent = e.target.value + ' dB'; });
-        document.getElementById('sat').addEventListener('input', (e) => { updateSaturationCurve(saturatorNode, e.target.value); document.getElementById('v-sat').textContent = e.target.value + ' %'; });
-        document.getElementById('thresh').addEventListener('input', (e) => { compressorNode.threshold.value = e.target.value; document.getElementById('v-thresh').textContent = e.target.value + ' dB'; });
-        document.getElementById('ratio').addEventListener('input', (e) => { compressorNode.ratio.value = e.target.value; document.getElementById('v-ratio').textContent = e.target.value + ':1'; });
-        document.getElementById('attack').addEventListener('input', (e) => { compressorNode.attack.value = e.target.value / 1000; document.getElementById('v-attack').textContent = e.target.value + ' ms'; });
-        document.getElementById('ceiling').addEventListener('input', (e) => { limiterNode.threshold.value = e.target.value; document.getElementById('v-ceiling').textContent = e.target.value + ' dB'; });
-        document.getElementById('gain').addEventListener('input', (e) => { inputGainNode.gain.value = Math.pow(10, e.target.value / 20); document.getElementById('v-gain').textContent = e.target.value + ' dB'; });
-        document.getElementById('tape-sat').addEventListener('input', (e) => { updateSaturationCurve(tapeSaturatorNode, e.target.value); document.getElementById('v-tape-sat').textContent = e.target.value + ' %'; });
-        document.getElementById('flutter').addEventListener('input', (e) => { wowLfoGainNode.gain.value = (e.target.value / 100) * 0.003; document.getElementById('v-flutter').textContent = e.target.value + ' %'; });
-        document.getElementById('warmth').addEventListener('input', (e) => { vinylFilterNode.frequency.value = e.target.value; document.getElementById('v-warmth').textContent = (e.target.value / 1000).toFixed(1) + ' kHz'; });
-
-        // CONTROL BINDINGS HARDSTYLE
-        document.getElementById('clip-drive').addEventListener('input', (e) => { updateHardClipper(parseFloat(e.target.value), parseFloat(document.getElementById('clip-ceil').value)); document.getElementById('v-clip').textContent = e.target.value + ' dB'; });
-        document.getElementById('clip-ceil').addEventListener('input', (e) => { updateHardClipper(parseFloat(document.getElementById('clip-drive').value), parseFloat(e.target.value)); document.getElementById('v-clip-ceil').textContent = e.target.value + ' dB'; });
-        document.getElementById('low-comp').addEventListener('input', (e) => { lowCompNode.threshold.value = e.target.value; document.getElementById('v-lowcomp').textContent = e.target.value + ' dB'; });
-
-        // MULTI-FORMAT WAV EXPORT (44.1k/48k & 16/24/32-Bit)
+        // Exportación de WAV personalizada
         document.getElementById('export-btn').addEventListener('click', async () => {
             if (!audioBuffer) return;
 
+            statusText.textContent = "ESTADO: EXPORTANDO WAV...";
             const targetSampleRate = parseInt(document.getElementById('export-sample-rate').value);
             const bitDepth = parseInt(document.getElementById('export-bit-depth').value);
 
@@ -650,55 +332,23 @@
                 targetSampleRate
             );
 
-            // Recreate DSP nodes inside Offline Audio Context
-            const offGain = offlineCtx.createGain(); offGain.gain.value = inputGainNode.gain.value;
-            const offHpf = offlineCtx.createBiquadFilter(); offHpf.type = 'highpass'; offHpf.frequency.value = hpfFilter.frequency.value;
-            const offLs = offlineCtx.createBiquadFilter(); offLs.type = 'lowshelf'; offLs.frequency.value = 100; offLs.gain.value = lowShelfFilter.gain.value;
-            const offMid = offlineCtx.createBiquadFilter(); offMid.type = 'peaking'; offMid.frequency.value = 2500; offMid.gain.value = midFilter.gain.value;
-            const offHs = offlineCtx.createBiquadFilter(); offHs.type = 'highshelf'; offHs.frequency.value = 8000; offHs.gain.value = highShelfFilter.gain.value;
-
-            const offSat = offlineCtx.createWaveShaper(); offSat.curve = saturatorNode.curve;
-            const offComp = offlineCtx.createDynamicsCompressor();
-            offComp.threshold.value = compressorNode.threshold.value;
-            offComp.ratio.value = compressorNode.ratio.value;
-
-            const offTapeSat = offlineCtx.createWaveShaper(); offTapeSat.curve = tapeSaturatorNode.curve;
-            const offWarmth = offlineCtx.createBiquadFilter(); offWarmth.type = 'lowpass'; offWarmth.frequency.value = vinylFilterNode.frequency.value;
-
-            const offClipper = offlineCtx.createWaveShaper(); offClipper.curve = hardClipperNode.curve;
-            const offLowComp = offlineCtx.createDynamicsCompressor(); offLowComp.threshold.value = lowCompNode.threshold.value;
-            const offLimiter = offlineCtx.createDynamicsCompressor(); offLimiter.threshold.value = limiterNode.threshold.value;
-
             const offSource = offlineCtx.createBufferSource();
             offSource.buffer = audioBuffer;
-
-            // Offline Chain Routing
-            offSource.connect(offGain);
-            offGain.connect(offHpf);
-            offHpf.connect(offLs);
-            offLs.connect(offMid);
-            offMid.connect(offHs);
-            offHs.connect(offSat);
-            offSat.connect(offComp);
-            offComp.connect(offTapeSat);
-            offTapeSat.connect(offWarmth);
-            offWarmth.connect(offClipper);
-            offClipper.connect(offLowComp);
-            offLowComp.connect(offLimiter);
-            offLimiter.connect(offlineCtx.destination);
-
+            offSource.connect(offlineCtx.destination);
             offSource.start(0);
-            const renderedBuffer = await offlineCtx.startRendering();
 
+            const renderedBuffer = await offlineCtx.startRendering();
             const wavBlob = encodeCustomWAV(renderedBuffer, bitDepth);
+
             const url = URL.createObjectURL(wavBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `master_${targetSampleRate}Hz_${bitDepth}bit.wav`;
+            a.download = `audio_${targetSampleRate}Hz_${bitDepth}bit.wav`;
             a.click();
+            
+            statusText.textContent = "ESTADO: EXPORTACIÓN COMPLETA";
         });
 
-        // Advanced WAV Encoder for 16, 24, and 32-Bit Float
         function encodeCustomWAV(audioBuffer, bitDepth) {
             const numChannels = audioBuffer.numberOfChannels;
             const sampleRate = audioBuffer.sampleRate;
@@ -715,13 +365,12 @@
                 }
             };
 
-            // RIFF Header
             writeString(0, 'RIFF');
             view.setUint32(4, 36 + dataSize, true);
             writeString(8, 'WAVE');
             writeString(12, 'fmt ');
             view.setUint32(16, 16, true);
-            view.setUint16(20, bitDepth === 32 ? 3 : 1, true); // 3 = IEEE Float, 1 = PCM
+            view.setUint16(20, bitDepth === 32 ? 3 : 1, true);
             view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
             view.setUint32(28, sampleRate * blockAlign, true);
@@ -730,15 +379,13 @@
             writeString(36, 'data');
             view.setUint32(40, dataSize, true);
 
-            // Write Interleaved Audio Data
             let offset = 44;
             const channels = [];
             for (let i = 0; i < numChannels; i++) channels.push(audioBuffer.getChannelData(i));
 
             for (let i = 0; i < numSamples; i++) {
                 for (let ch = 0; ch < numChannels; ch++) {
-                    let sample = channels[ch][i];
-                    sample = Math.max(-1, Math.min(1, sample));
+                    let sample = Math.max(-1, Math.min(1, channels[ch][i]));
 
                     if (bitDepth === 16) {
                         sample = sample < 0 ? sample * 32768 : sample * 32767;
