@@ -284,7 +284,8 @@
     <header>
         <div class="brand">MOUSTACHE <span>HYBRID DSP</span></div>
         <div class="btn-rack">
-            <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+            <!-- INPUT DE AUDIO OPTIMIZADO -->
+            <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .m4a, .aac, .flac, .ogg, .aiff, audio/wav, audio/mpeg, audio/mp4, audio/aac, audio/flac, audio/ogg" style="display:none;">
             <button class="btn" id="btn-load-file">📂 Cargar Audio</button>
             
             <select id="export-sample-rate" class="export-select">
@@ -539,13 +540,16 @@
             hardClipperNode.curve = curve;
         }
 
-        // Carga de Audio Corregida
+        // EVENTOS Y PROCESAMIENTO DE CARGA DE ARCHIVO CORREGIDOS
+        const audioInput = document.getElementById('audio-input');
+
         document.getElementById('btn-load-file').addEventListener('click', async () => {
             await ensureAudioContext();
-            document.getElementById('audio-input').click();
+            audioInput.value = ''; // Permite recargar el mismo archivo si fue reintentado
+            audioInput.click();
         });
 
-        document.getElementById('audio-input').addEventListener('change', async (e) => {
+        audioInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -553,9 +557,16 @@
 
             try {
                 await ensureAudioContext();
-                const arrayBuffer = await file.arrayBuffer();
 
-                // Decodificación universal (Callback + Promise fallback)
+                // Uso explicito de FileReader para compatibilidad nativa en móviles y escritorios
+                const arrayBuffer = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = (err) => reject(err);
+                    reader.readAsArrayBuffer(file);
+                });
+
+                // Decodificación universal con callbacks
                 audioBuffer = await new Promise((resolve, reject) => {
                     audioCtx.decodeAudioData(
                         arrayBuffer,
@@ -573,7 +584,7 @@
             } catch (err) {
                 console.error("Error al procesar el archivo:", err);
                 document.getElementById('track-title').textContent = "ERROR AL CARGAR AUDIO";
-                alert("Error al procesar el archivo de audio. Verifica que sea un formato válido (WAV, MP3, FLAC, AAC).");
+                alert("Error al cargar el archivo. Verifica que el formato sea un audio válido (.wav, .mp3, .m4a, .flac, .aac).");
             }
         });
 
