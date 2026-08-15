@@ -276,10 +276,15 @@
 
     <header>
         <div class="brand">MOUSTACHE <span>HYBRID DSP</span></div>
-        <div class="btn-rack">
-            <input type="file" id="audio-input" accept="audio/*" style="display:none;">
-            <button class="btn" onclick="document.getElementById('audio-input').click()">📂 Cargar</button>
-            <button class="btn btn-primary" id="export-btn" disabled>💾 WAV</button>
+        <div class="file-controls">
+            <label for="audio-input" class="btn">
+                📂 Cargar Audio
+            </label>
+            <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .flac, .m4a, .aac, .ogg" style="display: none;">
+            
+            <button class="btn btn-primary" id="export-btn" disabled>
+                💾 Exportar WAV
+            </button>
         </div>
     </header>
 
