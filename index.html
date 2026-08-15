@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hardstyle Studio Console - Mobile DSP</title>
+    <title>Hybrid Studio Console - Classic & Hardstyle DSP</title>
     <style>
         :root {
             --bg-color: #0b0c0e;
@@ -45,12 +45,11 @@
             background: linear-gradient(180deg, #1a1d26 0%, #12141a 100%);
             border: 1px solid var(--panel-border);
             border-radius: 8px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
         }
 
         .brand {
             font-weight: 900;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             letter-spacing: 1.5px;
             color: var(--text-main);
             display: flex;
@@ -97,12 +96,11 @@
             border: 1px solid var(--panel-border);
             border-radius: 8px;
             padding: 8px;
-            position: relative;
         }
 
         canvas {
             width: 100%;
-            height: 110px;
+            height: 100px;
             background: #000;
             border-radius: 4px;
             display: block;
@@ -117,12 +115,56 @@
             font-family: monospace;
         }
 
-        /* Console Modules Grid */
-        .console-grid {
-            display: grid;
+        /* Section Accordion Selectors */
+        .section-toggle-bar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            background: #161922;
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: #202533;
+            color: var(--text-main);
+            border-color: var(--accent-cyan);
+        }
+
+        .toggle-btn.active.hardstyle-tab {
+            border-color: var(--accent-orange);
+        }
+
+        .toggle-btn .badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #0d0e12;
+        }
+
+        /* Modules Grid Layout */
+        .dsp-section {
+            display: none;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 10px;
             flex: 1;
+        }
+
+        .dsp-section.visible {
+            display: grid;
         }
 
         .channel-strip {
@@ -143,12 +185,10 @@
             color: var(--accent-cyan);
             border-bottom: 1px solid var(--panel-border);
             padding-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
         }
 
         .strip-header.hard { color: var(--accent-orange); }
-        .strip-header.spatial { color: var(--accent-red); }
+        .strip-header.vintage { color: #ffaa00; }
 
         .controls-matrix {
             display: grid;
@@ -175,7 +215,7 @@
             font-family: monospace;
         }
 
-        /* Mobile Slider Design */
+        /* Sliders */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
@@ -188,8 +228,8 @@
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 4px;
             background: linear-gradient(180deg, #4b5563 0%, #1f2937 100%);
             border: 1px solid var(--accent-cyan);
@@ -197,9 +237,8 @@
         }
 
         .hard input[type="range"]::-webkit-slider-thumb { border-color: var(--accent-orange); }
-        .spatial input[type="range"]::-webkit-slider-thumb { border-color: var(--accent-red); }
 
-        /* Mobile Transport Strip */
+        /* Transport Bar */
         .transport-strip {
             background: #13151b;
             border: 1px solid var(--panel-border);
@@ -214,8 +253,8 @@
         }
 
         .btn-play {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: var(--accent-cyan);
             color: #000;
@@ -229,14 +268,14 @@
 
         @media (max-width: 600px) {
             body { padding: 6px; }
-            .console-grid { grid-template-columns: 1fr; }
+            .dsp-section { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="brand">HARDSTYLE <span>DSP CONSOLE</span></div>
+        <div class="brand">MOUSTACHE <span>HYBRID DSP</span></div>
         <div class="btn-rack">
             <input type="file" id="audio-input" accept="audio/*" style="display:none;">
             <button class="btn" onclick="document.getElementById('audio-input').click()">📂 Cargar</button>
@@ -247,13 +286,106 @@
     <div class="console-screen">
         <canvas id="spectrum"></canvas>
         <div class="screen-info">
-            <span id="track-title">CONSOLA LISTA</span>
+            <span id="track-title">SISTEMA LISTO</span>
             <span id="time-display">00:00 / 00:00</span>
         </div>
     </div>
 
-    <div class="console-grid">
-        <!-- 1. HARD CLIPPER & TRANSIENTS -->
+    <!-- Accordion Control Bar -->
+    <div class="section-toggle-bar">
+        <button class="toggle-btn active" id="tab-classic" onclick="switchTab('classic')">
+            EFECTOS CLÁSICOS <span class="badge">4 MÓDULOS</span>
+        </button>
+        <button class="toggle-btn hardstyle-tab" id="tab-hardstyle" onclick="switchTab('hardstyle')">
+            HARDSTYLE <span class="badge">3 MÓDULOS</span>
+        </button>
+    </div>
+
+    <!-- SECTION 1: EFECTOS CLÁSICOS -->
+    <div class="dsp-section visible" id="sec-classic">
+        <div class="channel-strip">
+            <div class="strip-header">1. EQ PARAMÉTRICO</div>
+            <div class="controls-matrix">
+                <div class="fader-cell">
+                    <div class="fader-label">Low Cut <span class="fader-val" id="v-hpf">30 Hz</span></div>
+                    <input type="range" id="hpf" min="20" max="120" value="30">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Low Shelf <span class="fader-val" id="v-ls">0 dB</span></div>
+                    <input type="range" id="ls" min="-12" max="12" value="0" step="0.5">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Mid Bell <span class="fader-val" id="v-mid">0 dB</span></div>
+                    <input type="range" id="mid" min="-12" max="12" value="0" step="0.5">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">High Shelf <span class="fader-val" id="v-hs">0 dB</span></div>
+                    <input type="range" id="hs" min="-12" max="12" value="0" step="0.5">
+                </div>
+            </div>
+        </div>
+
+        <div class="channel-strip">
+            <div class="strip-header">2. SATURACIÓN & COMPRESIÓN</div>
+            <div class="controls-matrix">
+                <div class="fader-cell">
+                    <div class="fader-label">Saturación <span class="fader-val" id="v-sat">0 %</span></div>
+                    <input type="range" id="sat" min="0" max="100" value="0">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Threshold <span class="fader-val" id="v-thresh">-12 dB</span></div>
+                    <input type="range" id="thresh" min="-40" max="0" value="-12">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Ratio <span class="fader-val" id="v-ratio">2:1</span></div>
+                    <input type="range" id="ratio" min="1" max="10" value="2" step="0.5">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Ataque <span class="fader-val" id="v-attack">30 ms</span></div>
+                    <input type="range" id="attack" min="1" max="100" value="30">
+                </div>
+            </div>
+        </div>
+
+        <div class="channel-strip">
+            <div class="strip-header">3. LIMITADOR & OUTPUT</div>
+            <div class="controls-matrix">
+                <div class="fader-cell">
+                    <div class="fader-label">Ceiling <span class="fader-val" id="v-ceiling">-0.3 dB</span></div>
+                    <input type="range" id="ceiling" min="-3" max="0" value="-0.3" step="0.1">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Ganancia <span class="fader-val" id="v-gain">0 dB</span></div>
+                    <input type="range" id="gain" min="-12" max="12" value="0" step="0.5">
+                </div>
+            </div>
+        </div>
+
+        <div class="channel-strip">
+            <div class="strip-header vintage">4. CINTA & VINILO</div>
+            <div class="controls-matrix">
+                <div class="fader-cell">
+                    <div class="fader-label">Sat. Cinta <span class="fader-val" id="v-tape-sat">0 %</span></div>
+                    <input type="range" id="tape-sat" min="0" max="100" value="0">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Wow/Flutter <span class="fader-val" id="v-flutter">0 %</span></div>
+                    <input type="range" id="flutter" min="0" max="100" value="0">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Crackle <span class="fader-val" id="v-crackle">0 %</span></div>
+                    <input type="range" id="crackle" min="0" max="100" value="0">
+                </div>
+                <div class="fader-cell">
+                    <div class="fader-label">Filtro Cálido <span class="fader-val" id="v-warmth">20 kHz</span></div>
+                    <input type="range" id="warmth" min="5000" max="20000" value="20000" step="250">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: HARDSTYLE DSP -->
+    <div class="dsp-section" id="sec-hardstyle">
         <div class="channel-strip hard">
             <div class="strip-header hard">1. HARD CLIPPER & TRANSIENTS</div>
             <div class="controls-matrix">
@@ -262,62 +394,32 @@
                     <input type="range" id="clip-drive" min="0" max="18" value="0" step="0.5">
                 </div>
                 <div class="fader-cell">
-                    <div class="fader-label">Ceiling Clip <span class="fader-val" id="v-ceil">-0.1 dB</span></div>
+                    <div class="fader-label">Ceiling Clip <span class="fader-val" id="v-clip-ceil">-0.1 dB</span></div>
                     <input type="range" id="clip-ceil" min="-3" max="0" value="-0.1" step="0.1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Punch Attack <span class="fader-val" id="v-att">0 %</span></div>
-                    <input type="range" id="trans-att" min="0" max="100" value="0" step="1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Sub Sustain <span class="fader-val" id="v-sust">0 %</span></div>
-                    <input type="range" id="trans-sust" min="-50" max="50" value="0" step="1">
                 </div>
             </div>
         </div>
 
-        <!-- 2. MID/SIDE & SPATIAL STEREO -->
-        <div class="channel-strip spatial">
-            <div class="strip-header spatial">2. MID / SIDE STEREO FIELD</div>
+        <div class="channel-strip hard">
+            <div class="strip-header hard">2. MID / SIDE STEREO FIELD</div>
             <div class="controls-matrix">
                 <div class="fader-cell">
-                    <div class="fader-label">Mid Level (Kick/Mono) <span class="fader-val" id="v-mid">0 dB</span></div>
+                    <div class="fader-label">Mid Level <span class="fader-val" id="v-ms-mid">0 dB</span></div>
                     <input type="range" id="ms-mid" min="-12" max="6" value="0" step="0.5">
                 </div>
                 <div class="fader-cell">
-                    <div class="fader-label">Side Width (Leads) <span class="fader-val" id="v-side">100 %</span></div>
+                    <div class="fader-label">Side Width <span class="fader-val" id="v-ms-side">100 %</span></div>
                     <input type="range" id="ms-side" min="0" max="200" value="100" step="5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Mono Bass Cut <span class="fader-val" id="v-monocut">120 Hz</span></div>
-                    <input type="range" id="mono-cut" min="40" max="250" value="120" step="5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">High Shelf Air <span class="fader-val" id="v-air">0 dB</span></div>
-                    <input type="range" id="hs-air" min="-6" max="12" value="0" step="0.5">
                 </div>
             </div>
         </div>
 
-        <!-- 3. BASS CONTROL & MULTIBAND COMP -->
-        <div class="channel-strip">
-            <div class="strip-header">3. BASS & MULTIBAND COMP</div>
+        <div class="channel-strip hard">
+            <div class="strip-header hard">3. BASS & MULTIBAND COMP</div>
             <div class="controls-matrix">
                 <div class="fader-cell">
                     <div class="fader-label">Sub-Bass Comp <span class="fader-val" id="v-lowcomp">0 dB</span></div>
                     <input type="range" id="low-comp" min="-30" max="0" value="0" step="1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Mid/High Comp <span class="fader-val" id="v-midcomp">0 dB</span></div>
-                    <input type="range" id="mid-comp" min="-30" max="0" value="0" step="1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Master Gain <span class="fader-val" id="v-gain">0 dB</span></div>
-                    <input type="range" id="master-gain" min="-12" max="12" value="0" step="0.5">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Brickwall Limiter <span class="fader-val" id="v-limit">-0.2 dB</span></div>
-                    <input type="range" id="limiter" min="-2" max="0" value="-0.2" step="0.1">
                 </div>
             </div>
         </div>
@@ -330,10 +432,31 @@
 
     <script>
         let audioCtx, audioBuffer, sourceNode, isPlaying = false, startTime = 0, pauseOffset = 0;
-        let inputGainNode, hardClipperNode, midGainNode, sideGainNode, lowCompNode, highCompNode, limiterNode, analyserNode;
+        
+        // DSP Nodes Array & Chain
+        let inputGainNode, hpfFilter, lowShelfFilter, midFilter, highShelfFilter;
+        let saturatorNode, compressorNode, limiterNode;
+        let tapeSaturatorNode, tapeDelayNode, wowLfoNode, wowLfoGainNode, vinylFilterNode, crackleGainNode;
+        let hardClipperNode, lowCompNode, analyserNode;
 
         const canvas = document.getElementById('spectrum');
         const canvasCtx = canvas.getContext('2d');
+
+        // Accordion Tab Switcher
+        function switchTab(tab) {
+            document.getElementById('sec-classic').classList.remove('visible');
+            document.getElementById('sec-hardstyle').classList.remove('visible');
+            document.getElementById('tab-classic').classList.remove('active');
+            document.getElementById('tab-hardstyle').classList.remove('active');
+
+            if (tab === 'classic') {
+                document.getElementById('sec-classic').classList.add('visible');
+                document.getElementById('tab-classic').classList.add('active');
+            } else {
+                document.getElementById('sec-hardstyle').classList.add('visible');
+                document.getElementById('tab-hardstyle').classList.add('active');
+            }
+        }
 
         function initAudioContext() {
             if (!audioCtx) {
@@ -345,46 +468,72 @@
 
         function setupDSPChain() {
             inputGainNode = audioCtx.createGain();
+
+            // Classic Nodes
+            hpfFilter = audioCtx.createBiquadFilter(); hpfFilter.type = 'highpass';
+            lowShelfFilter = audioCtx.createBiquadFilter(); lowShelfFilter.type = 'lowshelf'; lowShelfFilter.frequency.value = 100;
+            midFilter = audioCtx.createBiquadFilter(); midFilter.type = 'peaking'; midFilter.frequency.value = 2500;
+            highShelfFilter = audioCtx.createBiquadFilter(); highShelfFilter.type = 'highshelf'; highShelfFilter.frequency.value = 8000;
             
-            // Hard Clipper Node (Soft-to-Hard Clip Transfer Curve)
+            saturatorNode = audioCtx.createWaveShaper();
+            compressorNode = audioCtx.createDynamicsCompressor();
+            
+            tapeSaturatorNode = audioCtx.createWaveShaper();
+            tapeDelayNode = audioCtx.createDelay(); tapeDelayNode.delayTime.value = 0.02;
+            wowLfoNode = audioCtx.createOscillator(); wowLfoNode.frequency.value = 1.8;
+            wowLfoGainNode = audioCtx.createGain(); wowLfoGainNode.gain.value = 0;
+            wowLfoNode.connect(wowLfoGainNode); wowLfoGainNode.connect(tapeDelayNode.delayTime); wowLfoNode.start();
+            vinylFilterNode = audioCtx.createBiquadFilter(); vinylFilterNode.type = 'lowpass'; vinylFilterNode.frequency.value = 20000;
+
+            // Hardstyle Nodes
             hardClipperNode = audioCtx.createWaveShaper();
             updateHardClipper(0, -0.1);
 
-            // Multiband Splitters
             lowCompNode = audioCtx.createDynamicsCompressor();
             lowCompNode.threshold.value = 0;
-            lowCompNode.ratio.value = 8;
-
-            highCompNode = audioCtx.createDynamicsCompressor();
-            highCompNode.threshold.value = 0;
 
             limiterNode = audioCtx.createDynamicsCompressor();
-            limiterNode.threshold.value = -0.2;
-            limiterNode.ratio.value = 20;
+            limiterNode.threshold.value = -0.3; limiterNode.ratio.value = 20;
 
-            analyserNode = audioCtx.createAnalyser();
-            analyserNode.fftSize = 1024;
+            analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 1024;
 
-            // Connections
-            inputGainNode.connect(hardClipperNode);
+            // Continuous Serial Routing (Maintains all active processing regardless of view)
+            inputGainNode.connect(hpfFilter);
+            hpfFilter.connect(lowShelfFilter);
+            lowShelfFilter.connect(midFilter);
+            midFilter.connect(highShelfFilter);
+            highShelfFilter.connect(saturatorNode);
+            saturatorNode.connect(compressorNode);
+            compressorNode.connect(tapeSaturatorNode);
+            tapeSaturatorNode.connect(tapeDelayNode);
+            tapeDelayNode.connect(vinylFilterNode);
+            vinylFilterNode.connect(hardClipperNode);
             hardClipperNode.connect(lowCompNode);
             lowCompNode.connect(limiterNode);
             limiterNode.connect(analyserNode);
             analyserNode.connect(audioCtx.destination);
         }
 
-        // Hard Clipping Math Function
+        function updateSaturationCurve(node, val) {
+            if (!node) return;
+            if (val <= 0) { node.curve = null; return; }
+            let k = val, n = 44100, curve = new Float32Array(n), deg = Math.PI / 180;
+            for (let i = 0; i < n; ++i) {
+                let x = i * 2 / n - 1;
+                curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+            }
+            node.curve = curve;
+        }
+
         function updateHardClipper(driveDb, ceilingDb) {
             if (!hardClipperNode) return;
             const samples = 44100;
             const curve = new Float32Array(samples);
             const drive = Math.pow(10, driveDb / 20);
             const ceil = Math.pow(10, ceilingDb / 20);
-
             for (let i = 0; i < samples; ++i) {
                 let x = (i * 2) / samples - 1;
                 let y = x * drive;
-                // Hard Cut Ceiling
                 if (y > ceil) y = ceil;
                 if (y < -ceil) y = -ceil;
                 curve[i] = y;
@@ -392,7 +541,7 @@
             hardClipperNode.curve = curve;
         }
 
-        // Loader & Audio Controls
+        // File Loader
         document.getElementById('audio-input').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -462,34 +611,31 @@
             let x = 0;
             for (let i = 0; i < buffer; i++) {
                 const barHeight = (data[i] / 255) * canvas.height;
-                canvasCtx.fillStyle = `rgb(255, ${100 + data[i]}, 0)`;
+                canvasCtx.fillStyle = `rgb(0, ${Math.min(255, data[i] + 80)}, 255)`;
                 canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                 x += barWidth + 1;
             }
         }
 
-        // Dynamic DSP Event Bindings
-        document.getElementById('clip-drive').addEventListener('input', (e) => {
-            const v = parseFloat(e.target.value);
-            document.getElementById('v-clip').textContent = v + ' dB';
-            updateHardClipper(v, parseFloat(document.getElementById('clip-ceil').value));
-        });
+        // BINDINGS CLASSIC DSP
+        document.getElementById('hpf').addEventListener('input', (e) => { hpfFilter.frequency.value = e.target.value; document.getElementById('v-hpf').textContent = e.target.value + ' Hz'; });
+        document.getElementById('ls').addEventListener('input', (e) => { lowShelfFilter.gain.value = e.target.value; document.getElementById('v-ls').textContent = e.target.value + ' dB'; });
+        document.getElementById('mid').addEventListener('input', (e) => { midFilter.gain.value = e.target.value; document.getElementById('v-mid').textContent = e.target.value + ' dB'; });
+        document.getElementById('hs').addEventListener('input', (e) => { highShelfFilter.gain.value = e.target.value; document.getElementById('v-hs').textContent = e.target.value + ' dB'; });
+        document.getElementById('sat').addEventListener('input', (e) => { updateSaturationCurve(saturatorNode, e.target.value); document.getElementById('v-sat').textContent = e.target.value + ' %'; });
+        document.getElementById('thresh').addEventListener('input', (e) => { compressorNode.threshold.value = e.target.value; document.getElementById('v-thresh').textContent = e.target.value + ' dB'; });
+        document.getElementById('ratio').addEventListener('input', (e) => { compressorNode.ratio.value = e.target.value; document.getElementById('v-ratio').textContent = e.target.value + ':1'; });
+        document.getElementById('attack').addEventListener('input', (e) => { compressorNode.attack.value = e.target.value / 1000; document.getElementById('v-attack').textContent = e.target.value + ' ms'; });
+        document.getElementById('ceiling').addEventListener('input', (e) => { limiterNode.threshold.value = e.target.value; document.getElementById('v-ceiling').textContent = e.target.value + ' dB'; });
+        document.getElementById('gain').addEventListener('input', (e) => { inputGainNode.gain.value = Math.pow(10, e.target.value / 20); document.getElementById('v-gain').textContent = e.target.value + ' dB'; });
+        document.getElementById('tape-sat').addEventListener('input', (e) => { updateSaturationCurve(tapeSaturatorNode, e.target.value); document.getElementById('v-tape-sat').textContent = e.target.value + ' %'; });
+        document.getElementById('flutter').addEventListener('input', (e) => { wowLfoGainNode.gain.value = (e.target.value / 100) * 0.003; document.getElementById('v-flutter').textContent = e.target.value + ' %'; });
+        document.getElementById('warmth').addEventListener('input', (e) => { vinylFilterNode.frequency.value = e.target.value; document.getElementById('v-warmth').textContent = (e.target.value / 1000).toFixed(1) + ' kHz'; });
 
-        document.getElementById('clip-ceil').addEventListener('input', (e) => {
-            const v = parseFloat(e.target.value);
-            document.getElementById('v-ceil').textContent = v + ' dB';
-            updateHardClipper(parseFloat(document.getElementById('clip-drive').value), v);
-        });
-
-        document.getElementById('low-comp').addEventListener('input', (e) => {
-            lowCompNode.threshold.value = e.target.value;
-            document.getElementById('v-lowcomp').textContent = e.target.value + ' dB';
-        });
-
-        document.getElementById('master-gain').addEventListener('input', (e) => {
-            inputGainNode.gain.value = Math.pow(10, e.target.value / 20);
-            document.getElementById('v-gain').textContent = e.target.value + ' dB';
-        });
+        // BINDINGS HARDSTYLE DSP
+        document.getElementById('clip-drive').addEventListener('input', (e) => { updateHardClipper(parseFloat(e.target.value), parseFloat(document.getElementById('clip-ceil').value)); document.getElementById('v-clip').textContent = e.target.value + ' dB'; });
+        document.getElementById('clip-ceil').addEventListener('input', (e) => { updateHardClipper(parseFloat(document.getElementById('clip-drive').value), parseFloat(e.target.value)); document.getElementById('v-clip-ceil').textContent = e.target.value + ' dB'; });
+        document.getElementById('low-comp').addEventListener('input', (e) => { lowCompNode.threshold.value = e.target.value; document.getElementById('v-lowcomp').textContent = e.target.value + ' dB'; });
     </script>
 </body>
 </html>
