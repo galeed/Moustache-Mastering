@@ -104,6 +104,116 @@
             outline: none;
         }
 
+        /* MODAL DE CONTROLES DE MASTERIZACIÓN */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .controls-card {
+            background: #ffffff;
+            color: #111827;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #111827;
+        }
+
+        .btn-close-modal {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .control-group {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fafafa;
+        }
+
+        .group-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-size: 0.8rem;
+            color: #4b5563;
+            flex: 1;
+        }
+
+        .control-row input[type="range"] {
+            flex: 2;
+            accent-color: #111827;
+            height: 4px;
+            background: #e5e7eb;
+        }
+
+        .control-val {
+            font-size: 0.8rem;
+            font-weight: 600;
+            width: 55px;
+            text-align: right;
+            font-family: monospace;
+            color: #111827;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .checkbox-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #111827;
+            cursor: pointer;
+        }
+
         .console-screen {
             background: #050607;
             border: 1px solid var(--panel-border);
@@ -223,28 +333,6 @@
             font-family: monospace;
         }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 8px;
-            background: var(--knob-track);
-            border-radius: 4px;
-            outline: none;
-            border: 1px solid #232734;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 4px;
-            background: linear-gradient(180deg, #4b5563 0%, #1f2937 100%);
-            border: 1px solid var(--accent-cyan);
-            cursor: pointer;
-        }
-
-        .hard input[type="range"]::-webkit-slider-thumb { border-color: var(--accent-orange); }
-
         .transport-strip {
             background: #13151b;
             border: 1px solid var(--panel-border);
@@ -284,10 +372,10 @@
     <header>
         <div class="brand">MOUSTACHE <span>HYBRID DSP</span></div>
         <div class="btn-rack">
-            <!-- INPUT DE AUDIO OPTIMIZADO -->
-            <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .m4a, .aac, .flac, .ogg, .aiff, audio/wav, audio/mpeg, audio/mp4, audio/aac, audio/flac, audio/ogg" style="display:none;">
+            <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .m4a, .aac, .flac, .ogg, .aiff" style="display:none;">
             <button class="btn" id="btn-load-file">📂 Cargar Audio</button>
-            
+            <button class="btn" id="btn-toggle-controls">🎛️ Controles</button>
+
             <select id="export-sample-rate" class="export-select">
                 <option value="44100">44.1 kHz</option>
                 <option value="48000" selected>48 kHz</option>
@@ -302,6 +390,99 @@
             <button class="btn btn-primary" id="export-btn" disabled>💾 Exportar WAV</button>
         </div>
     </header>
+
+    <!-- MODAL MASTERING CONTROLS -->
+    <div class="modal-overlay" id="controls-modal">
+        <div class="controls-card">
+            <div class="modal-header">
+                <div class="modal-title">Mastering Controls</div>
+                <button class="btn-close-modal" id="btn-close-modal">✕</button>
+            </div>
+
+            <!-- Loudness and Safety -->
+            <div class="control-group">
+                <div class="group-title">Loudness and Safety</div>
+                <div class="control-row">
+                    <span class="control-label">Target LUFS</span>
+                    <input type="range" id="m-lufs" min="-24" max="-6" value="-14" step="0.5">
+                    <span class="control-val" id="vm-lufs">-14.0</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">True Peak Ceiling</span>
+                    <input type="range" id="m-tp" min="-3" max="0" value="-1.0" step="0.1">
+                    <span class="control-val" id="vm-tp">-1.0 dBTP</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Output Trim</span>
+                    <input type="range" id="m-trim" min="-6" max="6" value="0.0" step="0.1">
+                    <span class="control-val" id="vm-trim">0.0 dB</span>
+                </div>
+                <div class="checkbox-row">
+                    <span class="control-label">Normalize Loudness</span>
+                    <input type="checkbox" id="m-norm">
+                </div>
+            </div>
+
+            <!-- Tone Character -->
+            <div class="control-group">
+                <div class="group-title">Tone Character</div>
+                <div class="control-row">
+                    <span class="control-label">Warmth</span>
+                    <input type="range" id="m-warmth" min="0" max="100" value="24">
+                    <span class="control-val" id="vm-warmth">24%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Clarity (De-harsh)</span>
+                    <input type="range" id="m-clarity" min="0" max="100" value="34">
+                    <span class="control-val" id="vm-clarity">34%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Air</span>
+                    <input type="range" id="m-air" min="0" max="100" value="14">
+                    <span class="control-val" id="vm-air">14%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Low-end Clean</span>
+                    <input type="range" id="m-lowclean" min="0" max="100" value="20">
+                    <span class="control-val" id="vm-lowclean">20%</span>
+                </div>
+            </div>
+
+            <!-- Stereo and Space -->
+            <div class="control-group">
+                <div class="group-title">Stereo and Space</div>
+                <div class="control-row">
+                    <span class="control-label">Stereo Width</span>
+                    <input type="range" id="m-width" min="0" max="200" value="105">
+                    <span class="control-val" id="vm-width">105%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Space Depth</span>
+                    <input type="range" id="m-depth" min="0" max="100" value="12">
+                    <span class="control-val" id="vm-depth">12%</span>
+                </div>
+                <div class="checkbox-row">
+                    <span class="control-label">Mono Bass Anchor</span>
+                    <input type="checkbox" id="m-monobass">
+                </div>
+            </div>
+
+            <!-- Dynamics -->
+            <div class="control-group">
+                <div class="group-title">Dynamics</div>
+                <div class="control-row">
+                    <span class="control-label">Glue Compression</span>
+                    <input type="range" id="m-glue" min="0" max="100" value="12">
+                    <span class="control-val" id="vm-glue">12%</span>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Auto-level Strength</span>
+                    <input type="range" id="m-autolevel" min="0" max="100" value="12">
+                    <span class="control-val" id="vm-autolevel">12%</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="console-screen">
         <canvas id="spectrum"></canvas>
@@ -438,8 +619,21 @@
         let tapeSaturatorNode, tapeDelayNode, wowLfoNode, wowLfoGainNode, vinylFilterNode;
         let hardClipperNode, lowCompNode, analyserNode;
 
+        // NUEVOS NODOS DSP PARA CONTROLES DE MASTERIZACIÓN
+        let mTrimGainNode, mClarityFilterNode, mAirFilterNode, mLowCleanFilterNode, mWarmthFilterNode;
+        let mGlueCompNode, mSpaceConvolverNode, mSpaceDryWetGain;
+
         const canvas = document.getElementById('spectrum');
         const canvasCtx = canvas.getContext('2d');
+
+        // LÓGICA DESPLEGABLE DEL MODAL
+        const controlsModal = document.getElementById('controls-modal');
+        document.getElementById('btn-toggle-controls').addEventListener('click', () => {
+            controlsModal.classList.add('active');
+        });
+        document.getElementById('btn-close-modal').addEventListener('click', () => {
+            controlsModal.classList.remove('active');
+        });
 
         function switchTab(tab) {
             document.getElementById('sec-classic').classList.remove('visible');
@@ -494,9 +688,17 @@
             limiterNode = audioCtx.createDynamicsCompressor();
             limiterNode.threshold.value = -0.3; limiterNode.ratio.value = 20;
 
+            // NODOS DE CONTROLES DE MASTERIZACIÓN
+            mTrimGainNode = audioCtx.createGain(); mTrimGainNode.gain.value = 1.0;
+            mLowCleanFilterNode = audioCtx.createBiquadFilter(); mLowCleanFilterNode.type = 'highpass'; mLowCleanFilterNode.frequency.value = 20;
+            mClarityFilterNode = audioCtx.createBiquadFilter(); mClarityFilterNode.type = 'peaking'; mClarityFilterNode.frequency.value = 3500; mClarityFilterNode.Q.value = 1.0;
+            mAirFilterNode = audioCtx.createBiquadFilter(); mAirFilterNode.type = 'highshelf'; mAirFilterNode.frequency.value = 12000;
+            mWarmthFilterNode = audioCtx.createBiquadFilter(); mWarmthFilterNode.type = 'lowpass'; mWarmthFilterNode.frequency.value = 20000;
+            mGlueCompNode = audioCtx.createDynamicsCompressor(); mGlueCompNode.threshold.value = 0; mGlueCompNode.ratio.value = 2;
+
             analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 1024;
 
-            // Continuous Processing Chain
+            // Cadena Completa
             inputGainNode.connect(hpfFilter);
             hpfFilter.connect(lowShelfFilter);
             lowShelfFilter.connect(midFilter);
@@ -508,8 +710,14 @@
             tapeDelayNode.connect(vinylFilterNode);
             vinylFilterNode.connect(hardClipperNode);
             hardClipperNode.connect(lowCompNode);
-            lowCompNode.connect(limiterNode);
-            limiterNode.connect(analyserNode);
+            lowCompNode.connect(mLowCleanFilterNode);
+            mLowCleanFilterNode.connect(mClarityFilterNode);
+            mClarityFilterNode.connect(mAirFilterNode);
+            mAirFilterNode.connect(mWarmthFilterNode);
+            mWarmthFilterNode.connect(mGlueCompNode);
+            mGlueCompNode.connect(limiterNode);
+            limiterNode.connect(mTrimGainNode);
+            mTrimGainNode.connect(analyserNode);
             analyserNode.connect(audioCtx.destination);
         }
 
@@ -540,12 +748,12 @@
             hardClipperNode.curve = curve;
         }
 
-        // EVENTOS Y PROCESAMIENTO DE CARGA DE ARCHIVO CORREGIDOS
+        // CARGA DE ARCHIVO
         const audioInput = document.getElementById('audio-input');
 
         document.getElementById('btn-load-file').addEventListener('click', async () => {
             await ensureAudioContext();
-            audioInput.value = ''; // Permite recargar el mismo archivo si fue reintentado
+            audioInput.value = '';
             audioInput.click();
         });
 
@@ -558,7 +766,6 @@
             try {
                 await ensureAudioContext();
 
-                // Uso explicito de FileReader para compatibilidad nativa en móviles y escritorios
                 const arrayBuffer = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
@@ -566,7 +773,6 @@
                     reader.readAsArrayBuffer(file);
                 });
 
-                // Decodificación universal con callbacks
                 audioBuffer = await new Promise((resolve, reject) => {
                     audioCtx.decodeAudioData(
                         arrayBuffer,
@@ -647,7 +853,41 @@
             }
         }
 
-        // CONTROL BINDINGS CLÁSICOS
+        // BINDINGS DE EVENTOS DE CONTROLES DE MASTERIZACIÓN
+        document.getElementById('m-lufs').addEventListener('input', (e) => { document.getElementById('vm-lufs').textContent = parseFloat(e.target.value).toFixed(1); });
+        document.getElementById('m-tp').addEventListener('input', (e) => { 
+            limiterNode.threshold.value = e.target.value; 
+            document.getElementById('vm-tp').textContent = parseFloat(e.target.value).toFixed(1) + ' dBTP'; 
+        });
+        document.getElementById('m-trim').addEventListener('input', (e) => { 
+            if(mTrimGainNode) mTrimGainNode.gain.value = Math.pow(10, e.target.value / 20); 
+            document.getElementById('vm-trim').textContent = parseFloat(e.target.value).toFixed(1) + ' dB'; 
+        });
+        document.getElementById('m-warmth').addEventListener('input', (e) => { 
+            if(mWarmthFilterNode) mWarmthFilterNode.frequency.value = 20000 - (e.target.value * 120); 
+            document.getElementById('vm-warmth').textContent = e.target.value + '%'; 
+        });
+        document.getElementById('m-clarity').addEventListener('input', (e) => { 
+            if(mClarityFilterNode) mClarityFilterNode.gain.value = -(e.target.value * 0.1); 
+            document.getElementById('vm-clarity').textContent = e.target.value + '%'; 
+        });
+        document.getElementById('m-air').addEventListener('input', (e) => { 
+            if(mAirFilterNode) mAirFilterNode.gain.value = (e.target.value * 0.08); 
+            document.getElementById('vm-air').textContent = e.target.value + '%'; 
+        });
+        document.getElementById('m-lowclean').addEventListener('input', (e) => { 
+            if(mLowCleanFilterNode) mLowCleanFilterNode.frequency.value = 20 + (e.target.value * 0.6); 
+            document.getElementById('vm-lowclean').textContent = e.target.value + '%'; 
+        });
+        document.getElementById('m-width').addEventListener('input', (e) => { document.getElementById('vm-width').textContent = e.target.value + '%'; });
+        document.getElementById('m-depth').addEventListener('input', (e) => { document.getElementById('vm-depth').textContent = e.target.value + '%'; });
+        document.getElementById('m-glue').addEventListener('input', (e) => { 
+            if(mGlueCompNode) mGlueCompNode.threshold.value = -(e.target.value * 0.3); 
+            document.getElementById('vm-glue').textContent = e.target.value + '%'; 
+        });
+        document.getElementById('m-autolevel').addEventListener('input', (e) => { document.getElementById('vm-autolevel').textContent = e.target.value + '%'; });
+
+        // CONTROLES BÁSICOS
         document.getElementById('hpf').addEventListener('input', (e) => { hpfFilter.frequency.value = e.target.value; document.getElementById('v-hpf').textContent = e.target.value + ' Hz'; });
         document.getElementById('ls').addEventListener('input', (e) => { lowShelfFilter.gain.value = e.target.value; document.getElementById('v-ls').textContent = e.target.value + ' dB'; });
         document.getElementById('mid').addEventListener('input', (e) => { midFilter.gain.value = e.target.value; document.getElementById('v-mid').textContent = e.target.value + ' dB'; });
@@ -662,12 +902,12 @@
         document.getElementById('flutter').addEventListener('input', (e) => { wowLfoGainNode.gain.value = (e.target.value / 100) * 0.003; document.getElementById('v-flutter').textContent = e.target.value + ' %'; });
         document.getElementById('warmth').addEventListener('input', (e) => { vinylFilterNode.frequency.value = e.target.value; document.getElementById('v-warmth').textContent = (e.target.value / 1000).toFixed(1) + ' kHz'; });
 
-        // CONTROL BINDINGS HARDSTYLE
+        // HARDSTYLE CONTROLS
         document.getElementById('clip-drive').addEventListener('input', (e) => { updateHardClipper(parseFloat(e.target.value), parseFloat(document.getElementById('clip-ceil').value)); document.getElementById('v-clip').textContent = e.target.value + ' dB'; });
         document.getElementById('clip-ceil').addEventListener('input', (e) => { updateHardClipper(parseFloat(document.getElementById('clip-drive').value), parseFloat(e.target.value)); document.getElementById('v-clip-ceil').textContent = e.target.value + ' dB'; });
         document.getElementById('low-comp').addEventListener('input', (e) => { lowCompNode.threshold.value = e.target.value; document.getElementById('v-lowcomp').textContent = e.target.value + ' dB'; });
 
-        // EXPORTADOR WAV
+        // EXPORTADOR WAV CON MASTERING CONTROLS INCLUIDOS
         document.getElementById('export-btn').addEventListener('click', async () => {
             if (!audioBuffer) return;
 
@@ -696,6 +936,15 @@
 
             const offClipper = offlineCtx.createWaveShaper(); offClipper.curve = hardClipperNode.curve;
             const offLowComp = offlineCtx.createDynamicsCompressor(); offLowComp.threshold.value = lowCompNode.threshold.value;
+            
+            // MASTERING NODES EN OFFLINE
+            const offMLowClean = offlineCtx.createBiquadFilter(); offMLowClean.type = 'highpass'; offMLowClean.frequency.value = mLowCleanFilterNode.frequency.value;
+            const offMClarity = offlineCtx.createBiquadFilter(); offMClarity.type = 'peaking'; offMClarity.frequency.value = 3500; offMClarity.gain.value = mClarityFilterNode.gain.value;
+            const offMAir = offlineCtx.createBiquadFilter(); offMAir.type = 'highshelf'; offMAir.frequency.value = 12000; offMAir.gain.value = mAirFilterNode.gain.value;
+            const offMWarmth = offlineCtx.createBiquadFilter(); offMWarmth.type = 'lowpass'; offMWarmth.frequency.value = mWarmthFilterNode.frequency.value;
+            const offMGlue = offlineCtx.createDynamicsCompressor(); offMGlue.threshold.value = mGlueCompNode.threshold.value;
+            const offMTrim = offlineCtx.createGain(); offMTrim.gain.value = mTrimGainNode.gain.value;
+
             const offLimiter = offlineCtx.createDynamicsCompressor(); offLimiter.threshold.value = limiterNode.threshold.value;
 
             const offSource = offlineCtx.createBufferSource();
@@ -712,8 +961,14 @@
             offTapeSat.connect(offWarmth);
             offWarmth.connect(offClipper);
             offClipper.connect(offLowComp);
-            offLowComp.connect(offLimiter);
-            offLimiter.connect(offlineCtx.destination);
+            offLowComp.connect(offMLowClean);
+            offMLowClean.connect(offMClarity);
+            offMClarity.connect(offMAir);
+            offMAir.connect(offMWarmth);
+            offMWarmth.connect(offMGlue);
+            offMGlue.connect(offLimiter);
+            offLimiter.connect(offMTrim);
+            offMTrim.connect(offlineCtx.destination);
 
             offSource.start(0);
             const renderedBuffer = await offlineCtx.startRendering();
