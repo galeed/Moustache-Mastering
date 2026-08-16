@@ -87,6 +87,8 @@
         }
 
         .btn-primary { background: var(--accent-orange); color: #000; border: none; }
+        .btn-toggle-active { background: var(--accent-cyan) !important; color: #000 !important; border-color: var(--accent-cyan) !important; }
+        .btn-warn-active { background: var(--accent-red) !important; color: #fff !important; border-color: var(--accent-red) !important; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         select.export-select {
@@ -116,11 +118,18 @@
         .control-row input[type="range"], .control-row select { flex: 2; accent-color: #111827; height: 26px; background: #e5e7eb; border-radius: 4px; border: 1px solid #ccc; padding: 2px; }
         .control-val { font-size: 0.8rem; font-weight: 600; width: 55px; text-align: right; font-family: monospace; color: #111827; }
 
-        /* PANTALLA Y PESTAÑAS */
-        .console-screen { background: #050607; border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px; position: relative; }
-        canvas { width: 100%; height: 140px; background: #000; border-radius: 4px; display: block; }
-        .screen-info { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; font-family: monospace; }
+        /* PANTALLA Y METROS LUFS */
+        .console-screen { background: #050607; border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px; position: relative; display: flex; flex-direction: column; gap: 6px; }
+        canvas { width: 100%; height: 120px; background: #000; border-radius: 4px; display: block; }
+        .screen-info { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); font-family: monospace; }
         
+        .lufs-meter-panel { display: flex; gap: 8px; background: #000; border: 1px solid #1f2430; border-radius: 4px; padding: 6px 10px; justify-content: space-between; align-items: center; }
+        .meter-box { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .meter-label { font-size: 0.6rem; color: var(--text-muted); font-weight: bold; }
+        .meter-value { font-size: 0.85rem; font-weight: 900; font-family: monospace; color: var(--accent-green); }
+        .meter-value.club { color: var(--accent-orange); }
+        .meter-value.warn { color: var(--accent-red); }
+
         .section-toggle-bar { display: flex; gap: 8px; flex-wrap: wrap; }
         .toggle-btn {
             flex: 1; padding: 10px; background: #161922; border: 1px solid var(--panel-border);
@@ -178,7 +187,9 @@
         <div class="btn-rack">
             <input type="file" id="audio-input" accept="audio/*, .wav, .mp3, .m4a, .aac, .flac, .ogg, .aiff" style="display:none;">
             <button class="btn" id="btn-load-file">📂 Cargar Audio</button>
-            <button class="btn" id="btn-toggle-controls">🎛️ Controles</button>
+            <button class="btn" id="btn-toggle-ab">🔁 A/B Dry</button>
+            <button class="btn" id="btn-toggle-mono">🎛️ Mono Cut</button>
+            <button class="btn" id="btn-toggle-controls">⚙️ Ajustes</button>
 
             <select id="export-sample-rate" class="export-select">
                 <option value="44100">44.1 kHz</option>
@@ -263,6 +274,24 @@
 
     <div class="console-screen">
         <canvas id="spectrum"></canvas>
+        <div class="lufs-meter-panel">
+            <div class="meter-box">
+                <span class="meter-label">SHORT-TERM LUFS</span>
+                <span class="meter-value" id="val-lufs-st">-inf LUFS</span>
+            </div>
+            <div class="meter-box">
+                <span class="meter-label">INTEGRATED LUFS</span>
+                <span class="meter-value" id="val-lufs-int">-inf LUFS</span>
+            </div>
+            <div class="meter-box">
+                <span class="meter-label">TRUE PEAK</span>
+                <span class="meter-value" id="val-true-peak">-inf dBTP</span>
+            </div>
+            <div class="meter-box">
+                <span class="meter-label">TARGET REF</span>
+                <span class="meter-value" id="val-target-ref" style="color:var(--accent-cyan);">-14 STREAMING</span>
+            </div>
+        </div>
         <div class="screen-info">
             <span id="track-title">SISTEMA LISTO</span>
             <span id="time-display">00:00 / 00:00</span>
@@ -373,7 +402,16 @@
         let inputGainNode, hpfFilter, lowShelfFilter, midFilter, highShelfFilter;
         let saturatorNode, compressorNode, limiterNode;
         let hardClipperNode, antiAliasFilterNode, analyserNode;
-        
+
+        // A/B & MONO CONMUTACIÓN CON GAIN-MATCHING
+        let abSwitchGainNode, abDryGainNode, abWetGainNode, monoMergerNode;
+        let isABDryActive = false, isMonoActive = false;
+
+        // LUFS & TRUE PEAK MEASUREMENT NODES & VARIABLES
+        let lufsKWeightFilter, lufsHighPassFilter, lufsScriptNode;
+        let currentShortTermLUFS = -100, currentIntegratedLUFS = -100, currentTruePeak = -100;
+        let lufsIntegratedBuffer = [];
+
         // MID/SIDE SPLITTER NODES
         let msSplitter, msMerger, msSubLowPassL, msSubLowPassR, msHighSideFilter, msSideGain;
 
@@ -418,12 +456,17 @@
             highShelfFilter = audioCtx.createBiquadFilter(); highShelfFilter.type = 'highshelf'; highShelfFilter.frequency.value = 8000;
             saturatorNode = audioCtx.createWaveShaper();
             compressorNode = audioCtx.createDynamicsCompressor();
+
+            // Módulo A/B & Gain-Matching Nodes
+            abDryGainNode = audioCtx.createGain(); abDryGainNode.gain.value = 0; // Oculto por defecto
+            abWetGainNode = audioCtx.createGain(); abWetGainNode.gain.value = 1; // Procesado por defecto
+            monoMergerNode = audioCtx.createGain(); monoMergerNode.channelCount = 1; monoMergerNode.channelCountMode = 'explicit';
             
             // Módulo Clipper Progresivo & Anti-Alias Filter
             hardClipperNode = audioCtx.createWaveShaper();
             antiAliasFilterNode = audioCtx.createBiquadFilter();
             antiAliasFilterNode.type = 'lowpass';
-            antiAliasFilterNode.frequency.value = 20000; // Default Oversampling Anti-Aliasing Cutoff
+            antiAliasFilterNode.frequency.value = 20000;
             updateClipperCurve();
 
             // Módulo Separador FX / Punch Mid-Side
@@ -453,7 +496,42 @@
             
             analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 2048;
 
+            // MEDIDOR LUFS (Filtros de Ponderación K-Weighting ITU-R BS.1770)
+            lufsHighPassFilter = audioCtx.createBiquadFilter(); lufsHighPassFilter.type = 'highpass'; lufsHighPassFilter.frequency.value = 38;
+            lufsKWeightFilter = audioCtx.createBiquadFilter(); lufsKWeightFilter.type = 'highshelf'; lufsKWeightFilter.frequency.value = 1500; lufsKWeightFilter.gain.value = 4;
+            lufsScriptNode = audioCtx.createScriptProcessor(2048, 2, 2);
+
+            lufsScriptNode.onaudioprocess = function(e) {
+                const left = e.inputBuffer.getChannelData(0);
+                const right = e.inputBuffer.getChannelData(1);
+                let sum = 0; let peak = 0;
+
+                for (let i = 0; i < left.length; i++) {
+                    const l = left[i], r = right[i];
+                    const samplePeak = Math.max(Math.abs(l), Math.abs(r));
+                    if (samplePeak > peak) peak = samplePeak;
+                    sum += (l * l + r * r) / 2;
+                }
+
+                // Cálculo True Peak aproximado
+                currentTruePeak = 20 * Math.log10(Math.max(peak, 0.00001));
+
+                // Cálculo LUFS Short-Term (300ms window approximation)
+                const meanSquare = sum / left.length;
+                currentShortTermLUFS = -0.691 + (10 * Math.log10(Math.max(meanSquare, 0.000000001)));
+
+                if (isPlaying && isFinite(currentShortTermLUFS) && currentShortTermLUFS > -70) {
+                    lufsIntegratedBuffer.push(currentShortTermLUFS);
+                    if (lufsIntegratedBuffer.length > 300) lufsIntegratedBuffer.shift();
+                    const sumIntegrated = lufsIntegratedBuffer.reduce((a, b) => a + b, 0);
+                    currentIntegratedLUFS = sumIntegrated / lufsIntegratedBuffer.length;
+                }
+                updateLUFSUI();
+            };
+
             // Ruteo Principal
+            inputGainNode.connect(abDryGainNode); // Dry Path Directo
+            
             inputGainNode.connect(hpfFilter);
             hpfFilter.connect(lowShelfFilter);
             lowShelfFilter.connect(midFilter);
@@ -463,18 +541,17 @@
             
             // Ruteo Mid/Side
             compressorNode.connect(msSplitter);
-            msSplitter.connect(msSubLowPassL, 0); // L
-            msSplitter.connect(msSubLowPassR, 1); // R
-            msSubLowPassL.connect(msMerger, 0, 0); // Mono Low-end L
-            msSubLowPassR.connect(msMerger, 0, 1); // Mono Low-end R
+            msSplitter.connect(msSubLowPassL, 0);
+            msSplitter.connect(msSubLowPassR, 1);
+            msSubLowPassL.connect(msMerger, 0, 0);
+            msSubLowPassR.connect(msMerger, 0, 1);
 
-            // Stereo High-end Side Path
             compressorNode.connect(msHighSideFilter);
             msHighSideFilter.connect(msSideGain);
             msSideGain.connect(msMerger, 0, 0);
             msSideGain.connect(msMerger, 0, 1);
 
-            // Clipper Progresivo & Anti-Alias
+            // Clipper & Anti-Alias
             msMerger.connect(hardClipperNode);
             hardClipperNode.connect(antiAliasFilterNode);
             
@@ -484,24 +561,56 @@
             mAirFilterNode.connect(mWarmthFilterNode);
             mWarmthFilterNode.connect(mGlueCompNode);
             
-            // Sección Atmos
+            // Atmos
             mGlueCompNode.connect(atmosLowEQ);
             atmosLowEQ.connect(atmosMidEQ);
             atmosMidEQ.connect(atmosHighEQ);
             
-            // Dry Path
             atmosHighEQ.connect(limiterNode);
-            
-            // Wet Spatial Path
             atmosHighEQ.connect(atmosDepthDelay);
             atmosDepthDelay.connect(atmosDepthGain);
             atmosDepthGain.connect(limiterNode);
 
             limiterNode.connect(mTrimGainNode);
-            mTrimGainNode.connect(analyserNode);
+            mTrimGainNode.connect(abWetGainNode); // Wet Path Final
+
+            // Suma A/B a Analizador
+            abDryGainNode.connect(analyserNode);
+            abWetGainNode.connect(analyserNode);
+
+            // Ruteo Medidor LUFS
+            analyserNode.connect(lufsHighPassFilter);
+            lufsHighPassFilter.connect(lufsKWeightFilter);
+            lufsKWeightFilter.connect(lufsScriptNode);
+            lufsScriptNode.connect(audioCtx.destination);
+
             analyserNode.connect(audioCtx.destination);
 
             applyDolbyProfile('standard');
+        }
+
+        // ACTUALIZACIÓN DE MEDIDORES LUFS Y TRUE PEAK
+        function updateLUFSUI() {
+            const stEl = document.getElementById('val-lufs-st');
+            const intEl = document.getElementById('val-lufs-int');
+            const tpEl = document.getElementById('val-true-peak');
+
+            stEl.textContent = isFinite(currentShortTermLUFS) ? currentShortTermLUFS.toFixed(1) + ' LUFS' : '-inf LUFS';
+            intEl.textContent = isFinite(currentIntegratedLUFS) ? currentIntegratedLUFS.toFixed(1) + ' LUFS' : '-inf LUFS';
+            tpEl.textContent = isFinite(currentTruePeak) ? currentTruePeak.toFixed(1) + ' dBTP' : '-inf dBTP';
+
+            // Alerta visual de referencia
+            const targetLUFS = parseFloat(document.getElementById('m-lufs').value);
+            if (currentIntegratedLUFS > -9) {
+                intEl.className = "meter-value club";
+            } else if (currentIntegratedLUFS > targetLUFS + 1.5) {
+                intEl.className = "meter-value warn";
+            } else {
+                intEl.className = "meter-value";
+            }
+
+            if (currentTruePeak > -0.1) tpEl.className = "meter-value warn";
+            else tpEl.className = "meter-value";
         }
 
         // CLIPPER PROGRESIVO CON CURVAS SELECCIONABLES
@@ -585,6 +694,45 @@
             node.curve = curve;
         }
 
+        // BOTÓN PRUEBA A/B CON GAIN MATCHING AUTOMÁTICO
+        document.getElementById('btn-toggle-ab').addEventListener('click', () => {
+            isABDryActive = !isABDryActive;
+            const btn = document.getElementById('btn-toggle-ab');
+
+            if (isABDryActive) {
+                // Modo Dry: Calcular compensación automática de ganancia
+                const wetGain = mTrimGainNode.gain.value;
+                abDryGainNode.gain.value = wetGain; // Match level
+                abWetGainNode.gain.value = 0;
+                btn.classList.add('btn-toggle-active');
+                btn.textContent = '🔁 A/B (ORIGINAL)';
+            } else {
+                // Modo Wet Procesado
+                abDryGainNode.gain.value = 0;
+                abWetGainNode.gain.value = 1;
+                btn.classList.remove('btn-toggle-active');
+                btn.textContent = '🔁 A/B Dry';
+            }
+        });
+
+        // BOTÓN CONMUTADOR MONO (PHASE CHECK)
+        document.getElementById('btn-toggle-mono').addEventListener('click', () => {
+            isMonoActive = !isMonoActive;
+            const btn = document.getElementById('btn-toggle-mono');
+
+            if (isMonoActive) {
+                analyserNode.channelCount = 1;
+                analyserNode.channelCountMode = 'explicit';
+                btn.classList.add('btn-warn-active');
+                btn.textContent = '🎛️ MONO (ON)';
+            } else {
+                analyserNode.channelCount = 2;
+                analyserNode.channelCountMode = 'max';
+                btn.classList.remove('btn-warn-active');
+                btn.textContent = '🎛️ Mono Cut';
+            }
+        });
+
         // REPRODUCTOR
         document.getElementById('btn-load-file').addEventListener('click', async () => {
             await ensureAudioContext();
@@ -603,6 +751,7 @@
                 document.getElementById('play-btn').disabled = false;
                 document.getElementById('export-btn').disabled = false;
                 document.getElementById('seek-bar').disabled = false;
+                lufsIntegratedBuffer = [];
                 drawSpectrum();
             } catch (err) { alert("Error al procesar el audio."); }
         });
@@ -649,7 +798,7 @@
                 x += barWidth + 1;
             }
 
-            // DIBUJAR CURVA DE REFERENCIA TARGET HARDSTYLE (40-60 Hz Boost & 2-5 kHz Presence)
+            // DIBUJAR CURVA DE REFERENCIA TARGET HARDSTYLE
             canvasCtx.beginPath();
             canvasCtx.strokeStyle = '#00e5ff';
             canvasCtx.lineWidth = 2;
@@ -658,15 +807,23 @@
             const w = canvas.width;
             const h = canvas.height;
 
-            canvasCtx.moveTo(0, h * 0.25); // 40-60 Hz Sub-Punch Level
-            canvasCtx.quadraticCurveTo(w * 0.1, h * 0.2, w * 0.2, h * 0.6); // Caída a graves-medios
-            canvasCtx.quadraticCurveTo(w * 0.5, h * 0.35, w * 0.75, h * 0.45); // Pico 2-5 kHz Screech/Lead
-            canvasCtx.lineTo(w, h * 0.85); // Caída natural de agudos
+            canvasCtx.moveTo(0, h * 0.25);
+            canvasCtx.quadraticCurveTo(w * 0.1, h * 0.2, w * 0.2, h * 0.6);
+            canvasCtx.quadraticCurveTo(w * 0.5, h * 0.35, w * 0.75, h * 0.45);
+            canvasCtx.lineTo(w, h * 0.85);
             canvasCtx.stroke();
             canvasCtx.setLineDash([]);
         }
 
         // BINDINGS CONTROLES
+        document.getElementById('m-lufs').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('vm-lufs').textContent = val.toFixed(1);
+            const refEl = document.getElementById('val-target-ref');
+            if (val >= -9) refEl.textContent = val.toFixed(0) + ' CLUB/DJ';
+            else refEl.textContent = val.toFixed(0) + ' STREAMING';
+        });
+
         document.getElementById('hpf').addEventListener('input', (e) => { hpfFilter.frequency.value = e.target.value; document.getElementById('v-hpf').textContent = e.target.value + ' Hz'; });
         document.getElementById('ls').addEventListener('input', (e) => { lowShelfFilter.gain.value = e.target.value; document.getElementById('v-ls').textContent = e.target.value + ' dB'; });
         document.getElementById('mid').addEventListener('input', (e) => { midFilter.gain.value = e.target.value; document.getElementById('v-mid').textContent = e.target.value + ' dB'; });
