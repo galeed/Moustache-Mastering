@@ -656,7 +656,7 @@
         function switchTab(tab) {
             ['classic', 'atmos', 'hardstyle', 'synth'].forEach(t => {
                 document.getElementById('sec-' + t).classList.remove('visible');
-                document.getElementById('tab-' + t).classList.add('active');
+                document.getElementById('tab-' + t).classList.remove('active');
             });
             document.getElementById('sec-' + tab).classList.add('visible');
             document.getElementById('tab-' + tab).classList.add('active');
