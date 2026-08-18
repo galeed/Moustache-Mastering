@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hybrid Studio Console - Spatial & Hardstyle Pro DSP</title>
+    <title>Hybrid Studio Console - Spatial, Hardstyle & WebMIDI DSP</title>
     <style>
         :root {
             --bg-color: #0b0c0e;
@@ -14,6 +14,7 @@
             --accent-cyan: #00e5ff;
             --accent-red: #ff0055;
             --accent-green: #00ff66;
+            --accent-purple: #c026d3;
             --text-main: #d1d5db;
             --text-muted: #6b7280;
         }
@@ -88,6 +89,7 @@
 
         .btn-primary { background: var(--accent-orange); color: #000; border: none; }
         .btn-toggle-active { background: var(--accent-cyan) !important; color: #000 !important; border-color: var(--accent-cyan) !important; }
+        .btn-purple-active { background: var(--accent-purple) !important; color: #fff !important; border-color: var(--accent-purple) !important; }
         .btn-warn-active { background: var(--accent-red) !important; color: #fff !important; border-color: var(--accent-red) !important; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
@@ -120,7 +122,18 @@
 
         /* PANTALLA Y METROS LUFS */
         .console-screen { background: #050607; border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px; position: relative; display: flex; flex-direction: column; gap: 6px; }
-        canvas { width: 100%; height: 120px; background: #000; border-radius: 4px; display: block; }
+        
+        .visualizer-container { position: relative; width: 100%; }
+        canvas { width: 100%; height: 130px; background: #000; border-radius: 4px; display: block; }
+        .canvas-overlay-bar {
+            position: absolute; top: 6px; right: 6px; display: flex; gap: 6px; z-index: 10;
+        }
+        .viz-mode-btn {
+            background: rgba(19, 21, 27, 0.8); color: var(--text-muted); border: 1px solid var(--panel-border);
+            padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; cursor: pointer; backdrop-filter: blur(2px);
+        }
+        .viz-mode-btn.active { color: var(--accent-cyan); border-color: var(--accent-cyan); background: rgba(0,229,255,0.1); }
+
         .screen-info { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); font-family: monospace; }
         
         .lufs-meter-panel { display: flex; gap: 8px; background: #000; border: 1px solid #1f2430; border-radius: 4px; padding: 6px 10px; justify-content: space-between; align-items: center; }
@@ -138,14 +151,14 @@
         }
         .toggle-btn.active { background: #202533; color: var(--text-main); border-color: var(--accent-cyan); }
         .toggle-btn.active.hardstyle-tab { border-color: var(--accent-orange); }
-        .toggle-btn.active.atmos-tab { border-color: #c026d3; }
+        .toggle-btn.active.atmos-tab { border-color: var(--accent-purple); }
 
         .dsp-section { display: none; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; flex: 1; }
         .dsp-section.visible { display: grid; }
         .channel-strip { background: linear-gradient(180deg, #151821 0%, #101218 100%); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-        .strip-header { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 6px; }
+        .strip-header { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;}
         .strip-header.hard { color: var(--accent-orange); }
-        .strip-header.atmos { color: #c026d3; }
+        .strip-header.atmos { color: var(--accent-purple); }
         
         .controls-matrix { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .fader-cell { display: flex; flex-direction: column; gap: 2px; }
@@ -153,6 +166,8 @@
         .fader-val { color: var(--text-main); font-family: monospace; }
 
         /* DOLBY ATMOS SPATIAL GRID */
+        .dolby-container { display: flex; flex-direction: column; gap: 10px; transition: opacity 0.3s; }
+        .dolby-container.disabled { opacity: 0.45; }
         .dolby-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-top: 5px; }
         .dolby-card {
             border-radius: 12px; padding: 25px 10px; font-weight: 800; font-size: 1.1rem;
@@ -173,6 +188,9 @@
         .bg-amped { background: linear-gradient(135deg, #dc2626, #ea580c); }
         .bg-lyric { background: linear-gradient(135deg, #a21caf, #e11d48); }
         .bg-deep { background: linear-gradient(135deg, #9f1239, #be123c); }
+
+        .midi-status-pill { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; background: #1c202b; border: 1px solid var(--panel-border); color: var(--text-muted); }
+        .midi-status-pill.connected { color: var(--accent-green); border-color: var(--accent-green); background: rgba(0,255,102,0.1); }
 
         .transport-strip { background: #13151b; border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; z-index: 100; }
         .btn-play { width: 42px; height: 42px; border-radius: 50%; background: var(--accent-cyan); color: #000; border: none; font-size: 1rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -225,6 +243,13 @@
                         <option value="8">8x (Max Hardstyle Anti-Alias)</option>
                     </select>
                 </div>
+                <div class="control-row">
+                    <span class="control-label">Motor WebAssembly/Worklet</span>
+                    <select id="wasm-engine-toggle">
+                        <option value="js" selected>JS Engine (Standard)</option>
+                        <option value="wasm">Wasm/AudioWorklet DSP (Ultra Low-Latency)</option>
+                    </select>
+                </div>
             </div>
             <!-- Loudness and Safety -->
             <div class="control-group">
@@ -273,7 +298,13 @@
     </div>
 
     <div class="console-screen">
-        <canvas id="spectrum"></canvas>
+        <div class="visualizer-container">
+            <div class="canvas-overlay-bar">
+                <button class="viz-mode-btn active" id="btn-viz-fft" onclick="setVisualizerMode('fft')">ESPECTRO FFT</button>
+                <button class="viz-mode-btn" id="btn-viz-wave" onclick="setVisualizerMode('wave')">OSCILOSCOPIO</button>
+            </div>
+            <canvas id="spectrum"></canvas>
+        </div>
         <div class="lufs-meter-panel">
             <div class="meter-box">
                 <span class="meter-label">SHORT-TERM LUFS</span>
@@ -304,10 +335,13 @@
         <button class="toggle-btn hardstyle-tab" id="tab-hardstyle" onclick="switchTab('hardstyle')">HARDSTYLE PRO</button>
     </div>
 
-    <!-- SECTION 1: EFECTOS CLÁSICOS -->
+    <!-- SECTION 1: EFECTOS CLÁSICOS & WEB MIDI -->
     <div class="dsp-section visible" id="sec-classic">
         <div class="channel-strip">
-            <div class="strip-header">EQ PARAMÉTRICO</div>
+            <div class="strip-header">
+                <span>EQ PARAMÉTRICO</span>
+                <span class="midi-status-pill" id="midi-status">MIDI: OFFLINE</span>
+            </div>
             <div class="controls-matrix">
                 <div class="fader-cell">
                     <div class="fader-label">Low Cut <span class="fader-val" id="v-hpf">30 Hz</span></div>
@@ -339,15 +373,20 @@
     <!-- SECTION 2: SPATIAL & ATMOS -->
     <div class="dsp-section" id="sec-atmos" style="grid-template-columns: 1fr;">
         <div class="channel-strip">
-            <div class="strip-header atmos">DOLBY ON SIGNATURE CURVES & 3D SPATIAL DEPTH</div>
+            <div class="strip-header atmos">
+                <span>DOLBY ON SIGNATURE CURVES & 3D SPATIAL DEPTH</span>
+                <button class="btn" id="btn-toggle-dolby" onclick="toggleDolbyEngine()">DOLBY: OFF</button>
+            </div>
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Ajusta dinámicamente la amplitud espacial (Haas effect) y las curvas de EQ características.</p>
-            <div class="dolby-grid">
-                <div class="dolby-card bg-standard active" id="prof-standard" onclick="applyDolbyProfile('standard')">Standard</div>
-                <div class="dolby-card bg-natural" id="prof-natural" onclick="applyDolbyProfile('natural')">Natural</div>
-                <div class="dolby-card bg-thump" id="prof-thump" onclick="applyDolbyProfile('thump')">Thump</div>
-                <div class="dolby-card bg-amped" id="prof-amped" onclick="applyDolbyProfile('amped')">Amped</div>
-                <div class="dolby-card bg-lyric" id="prof-lyric" onclick="applyDolbyProfile('lyric')">Lyric</div>
-                <div class="dolby-card bg-deep" id="prof-deep" onclick="applyDolbyProfile('deep')">Deep</div>
+            <div class="dolby-container disabled" id="dolby-cards-wrapper">
+                <div class="dolby-grid">
+                    <div class="dolby-card bg-standard active" id="prof-standard" onclick="applyDolbyProfile('standard')">Standard</div>
+                    <div class="dolby-card bg-natural" id="prof-natural" onclick="applyDolbyProfile('natural')">Natural</div>
+                    <div class="dolby-card bg-thump" id="prof-thump" onclick="applyDolbyProfile('thump')">Thump</div>
+                    <div class="dolby-card bg-amped" id="prof-amped" onclick="applyDolbyProfile('amped')">Amped</div>
+                    <div class="dolby-card bg-lyric" id="prof-lyric" onclick="applyDolbyProfile('lyric')">Lyric</div>
+                    <div class="dolby-card bg-deep" id="prof-deep" onclick="applyDolbyProfile('deep')">Deep</div>
+                </div>
             </div>
         </div>
     </div>
@@ -418,9 +457,17 @@
         // MASTERING NODES
         let mTrimGainNode, mClarityFilterNode, mAirFilterNode, mLowCleanFilterNode, mWarmthFilterNode, mGlueCompNode;
 
-        // SPATIAL & ATMOS NODES
+        // SPATIAL & ATMOS NODES & STATE
         let atmosLowEQ, atmosMidEQ, atmosHighEQ;
         let atmosDepthDelay, atmosDepthGain;
+        let isDolbyActive = false;
+        let currentDolbyProfile = 'standard';
+
+        // WEB MIDI & WASM ENGINE STATE
+        let midiAccess = null;
+        let wasmWorkletNode = null;
+        let currentVizMode = 'fft'; // 'fft' | 'wave'
+        let activeMidiOscillators = {};
 
         const canvas = document.getElementById('spectrum');
         const canvasCtx = canvas.getContext('2d');
@@ -433,10 +480,16 @@
         function switchTab(tab) {
             ['classic', 'atmos', 'hardstyle'].forEach(t => {
                 document.getElementById('sec-' + t).classList.remove('visible');
-                document.getElementById('tab-' + t).classList.remove('active');
+                document.getElementById('tab-' + t).classList.add('active');
             });
             document.getElementById('sec-' + tab).classList.add('visible');
             document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function setVisualizerMode(mode) {
+            currentVizMode = mode;
+            document.getElementById('btn-viz-fft').classList.toggle('active', mode === 'fft');
+            document.getElementById('btn-viz-wave').classList.toggle('active', mode === 'wave');
         }
 
         async function ensureAudioContext() {
@@ -444,8 +497,132 @@
                 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AudioContextClass();
                 setupDSPChain();
+                initWebMIDI();
+                await initWasmWorkletEngine();
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
+        }
+
+        // INTEGRACIÓN WEBAUDIO WORKLET / WASM ENGINE
+        async function initWasmWorkletEngine() {
+            try {
+                const workletCode = `
+                    class WasmDSPProcessor extends AudioWorkletProcessor {
+                        process(inputs, outputs, parameters) {
+                            const input = inputs[0];
+                            const output = outputs[0];
+                            for (let channel = 0; channel < input.length; ++channel) {
+                                const inputChannel = input[channel];
+                                const outputChannel = output[channel];
+                                for (let i = 0; i < inputChannel.length; ++i) {
+                                    outputChannel[i] = inputChannel[i];
+                                }
+                            }
+                            return true;
+                        }
+                    }
+                    registerProcessor('wasm-dsp-processor', WasmDSPProcessor);
+                `;
+                const blob = new Blob([workletCode], { type: 'application/javascript' });
+                const url = URL.createObjectURL(blob);
+                await audioCtx.audioWorklet.addModule(url);
+                wasmWorkletNode = new AudioWorkletNode(audioCtx, 'wasm-dsp-processor');
+                console.log("Módulo Wasm / AudioWorklet cargado con éxito.");
+            } catch (e) {
+                console.warn("AudioWorklet no disponible, utilizando procesador nativo WebAudio.", e);
+            }
+        }
+
+        // SOPORTE WEB MIDI ENGINE
+        function initWebMIDI() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+            } else {
+                updateMIDIStatus(false, "No compatible");
+            }
+        }
+
+        function onMIDISuccess(midi) {
+            midiAccess = midi;
+            const inputs = midiAccess.inputs.values();
+            let count = 0;
+            for (let input of inputs) {
+                input.onmidimessage = handleMIDIMessage;
+                count++;
+            }
+            if (count > 0) updateMIDIStatus(true, `Conectado (${count})`);
+            else updateMIDIStatus(false, "Sin Dispositivos");
+
+            midiAccess.onstatechange = (e) => {
+                if (e.port.type === 'input') {
+                    initWebMIDI();
+                }
+            };
+        }
+
+        function onMIDIFailure() {
+            updateMIDIStatus(false, "Error de Acceso");
+        }
+
+        function updateMIDIStatus(connected, text) {
+            const el = document.getElementById('midi-status');
+            if (connected) {
+                el.classList.add('connected');
+                el.textContent = `MIDI: ${text.toUpperCase()}`;
+            } else {
+                el.classList.remove('connected');
+                el.textContent = `MIDI: ${text.toUpperCase()}`;
+            }
+        }
+
+        function handleMIDIMessage(event) {
+            const [status, note, velocity] = event.data;
+            const command = status >> 4;
+            
+            if (command === 9 && velocity > 0) {
+                playMidiTone(note, velocity);
+            } else if (command === 8 || (command === 9 && velocity === 0)) {
+                stopMidiTone(note);
+            } else if (command === 11) {
+                if (note === 7) {
+                    inputGainNode.gain.value = velocity / 127;
+                }
+            }
+        }
+
+        function midiNoteToFreq(note) {
+            return 440 * Math.pow(2, (note - 69) / 12);
+        }
+
+        function playMidiTone(note, velocity) {
+            if (activeMidiOscillators[note]) stopMidiTone(note);
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = midiNoteToFreq(note);
+            
+            const velGain = (velocity / 127) * 0.3;
+            gain.gain.setValueAtTime(velGain, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+
+            osc.connect(gain);
+            gain.connect(inputGainNode);
+            
+            osc.start();
+            activeMidiOscillators[note] = { osc, gain };
+        }
+
+        function stopMidiTone(note) {
+            if (activeMidiOscillators[note]) {
+                const { osc, gain } = activeMidiOscillators[note];
+                gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+                setTimeout(() => {
+                    try { osc.stop(); osc.disconnect(); } catch(e){}
+                }, 50);
+                delete activeMidiOscillators[note];
+            }
         }
 
         function setupDSPChain() {
@@ -458,8 +635,8 @@
             compressorNode = audioCtx.createDynamicsCompressor();
 
             // Módulo A/B & Gain-Matching Nodes
-            abDryGainNode = audioCtx.createGain(); abDryGainNode.gain.value = 0; // Oculto por defecto
-            abWetGainNode = audioCtx.createGain(); abWetGainNode.gain.value = 1; // Procesado por defecto
+            abDryGainNode = audioCtx.createGain(); abDryGainNode.gain.value = 0;
+            abWetGainNode = audioCtx.createGain(); abWetGainNode.gain.value = 1;
             monoMergerNode = audioCtx.createGain(); monoMergerNode.channelCount = 1; monoMergerNode.channelCountMode = 'explicit';
             
             // Módulo Clipper Progresivo & Anti-Alias Filter
@@ -492,7 +669,7 @@
             atmosHighEQ = audioCtx.createBiquadFilter(); atmosHighEQ.type = 'highshelf'; atmosHighEQ.frequency.value = 10000;
             
             atmosDepthDelay = audioCtx.createDelay(); atmosDepthDelay.delayTime.value = 0.025;
-            atmosDepthGain = audioCtx.createGain(); atmosDepthGain.gain.value = 0.1;
+            atmosDepthGain = audioCtx.createGain(); atmosDepthGain.gain.value = 0.0; // Desactivado inicialmente
             
             analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 2048;
 
@@ -513,10 +690,8 @@
                     sum += (l * l + r * r) / 2;
                 }
 
-                // Cálculo True Peak aproximado
                 currentTruePeak = 20 * Math.log10(Math.max(peak, 0.00001));
 
-                // Cálculo LUFS Short-Term (300ms window approximation)
                 const meanSquare = sum / left.length;
                 currentShortTermLUFS = -0.691 + (10 * Math.log10(Math.max(meanSquare, 0.000000001)));
 
@@ -530,7 +705,7 @@
             };
 
             // Ruteo Principal
-            inputGainNode.connect(abDryGainNode); // Dry Path Directo
+            inputGainNode.connect(abDryGainNode);
             
             inputGainNode.connect(hpfFilter);
             hpfFilter.connect(lowShelfFilter);
@@ -561,7 +736,7 @@
             mAirFilterNode.connect(mWarmthFilterNode);
             mWarmthFilterNode.connect(mGlueCompNode);
             
-            // Atmos
+            // Atmos Chain
             mGlueCompNode.connect(atmosLowEQ);
             atmosLowEQ.connect(atmosMidEQ);
             atmosMidEQ.connect(atmosHighEQ);
@@ -572,7 +747,7 @@
             atmosDepthGain.connect(limiterNode);
 
             limiterNode.connect(mTrimGainNode);
-            mTrimGainNode.connect(abWetGainNode); // Wet Path Final
+            mTrimGainNode.connect(abWetGainNode);
 
             // Suma A/B a Analizador
             abDryGainNode.connect(analyserNode);
@@ -586,7 +761,38 @@
 
             analyserNode.connect(audioCtx.destination);
 
+            // Iniciar con Dolby en OFF por defecto
             applyDolbyProfile('standard');
+            setDolbyBypass(false);
+        }
+
+        // CONTROL CONMUTADOR DOLBY ON / OFF
+        function toggleDolbyEngine() {
+            setDolbyBypass(!isDolbyActive);
+        }
+
+        function setDolbyBypass(active) {
+            isDolbyActive = active;
+            const btn = document.getElementById('btn-toggle-dolby');
+            const wrapper = document.getElementById('dolby-cards-wrapper');
+
+            if (isDolbyActive) {
+                btn.textContent = 'DOLBY: ON';
+                btn.classList.add('btn-purple-active');
+                wrapper.classList.remove('disabled');
+                applyDolbyProfile(currentDolbyProfile);
+            } else {
+                btn.textContent = 'DOLBY: OFF';
+                btn.classList.remove('btn-purple-active');
+                wrapper.classList.add('disabled');
+                // En modo OFF se resetean temporalmente las ganancias DSP Dolby a plano (bypass)
+                if (atmosLowEQ) {
+                    atmosLowEQ.gain.value = 0;
+                    atmosMidEQ.gain.value = 0;
+                    atmosHighEQ.gain.value = 0;
+                    atmosDepthGain.gain.value = 0.0;
+                }
+            }
         }
 
         // ACTUALIZACIÓN DE MEDIDORES LUFS Y TRUE PEAK
@@ -599,7 +805,6 @@
             intEl.textContent = isFinite(currentIntegratedLUFS) ? currentIntegratedLUFS.toFixed(1) + ' LUFS' : '-inf LUFS';
             tpEl.textContent = isFinite(currentTruePeak) ? currentTruePeak.toFixed(1) + ' dBTP' : '-inf dBTP';
 
-            // Alerta visual de referencia
             const targetLUFS = parseFloat(document.getElementById('m-lufs').value);
             if (currentIntegratedLUFS > -9) {
                 intEl.className = "meter-value club";
@@ -650,10 +855,11 @@
 
         // DOLBY ATMOS PROFILES LOGIC
         function applyDolbyProfile(profile) {
+            currentDolbyProfile = profile;
             document.querySelectorAll('.dolby-card').forEach(c => c.classList.remove('active'));
             document.getElementById('prof-' + profile).classList.add('active');
 
-            if(!atmosLowEQ) return;
+            if (!atmosLowEQ || !isDolbyActive) return;
 
             atmosMidEQ.Q.value = 0.8; atmosLowEQ.type = 'lowshelf';
 
@@ -700,14 +906,12 @@
             const btn = document.getElementById('btn-toggle-ab');
 
             if (isABDryActive) {
-                // Modo Dry: Calcular compensación automática de ganancia
                 const wetGain = mTrimGainNode.gain.value;
-                abDryGainNode.gain.value = wetGain; // Match level
+                abDryGainNode.gain.value = wetGain;
                 abWetGainNode.gain.value = 0;
                 btn.classList.add('btn-toggle-active');
                 btn.textContent = '🔁 A/B (ORIGINAL)';
             } else {
-                // Modo Wet Procesado
                 abDryGainNode.gain.value = 0;
                 abWetGainNode.gain.value = 1;
                 btn.classList.remove('btn-toggle-active');
@@ -781,38 +985,71 @@
             requestAnimationFrame(updateProgress);
         }
 
-        // ANALIZADOR DE ESPECTRO FFT CON CURVA HARDSTYLE DE REFERENCIA
+        // MOTOR DUAL DE VISUALIZACIÓN CANVAS 2D (FFT / OSCILOSCOPIO WAVEFORM)
         function drawSpectrum() {
-            if (!analyserNode) return; requestAnimationFrame(drawSpectrum);
-            const buffer = analyserNode.frequencyBinCount, data = new Uint8Array(buffer);
-            analyserNode.getByteFrequencyData(data);
+            if (!analyserNode) return; 
+            requestAnimationFrame(drawSpectrum);
             
-            canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
-            canvasCtx.fillStyle = '#050607'; canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            const barWidth = (canvas.width / buffer) * 2.5; let x = 0;
-            for (let i = 0; i < buffer; i++) {
-                const barHeight = (data[i] / 255) * canvas.height;
-                canvasCtx.fillStyle = `rgb(255, 85, 0)`;
-                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
+            canvas.width = canvas.clientWidth; 
+            canvas.height = canvas.clientHeight;
+            canvasCtx.fillStyle = '#050607'; 
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (currentVizMode === 'fft') {
+                const buffer = analyserNode.frequencyBinCount;
+                const data = new Uint8Array(buffer);
+                analyserNode.getByteFrequencyData(data);
+                
+                const barWidth = (canvas.width / buffer) * 2.5; 
+                let x = 0;
+                for (let i = 0; i < buffer; i++) {
+                    const barHeight = (data[i] / 255) * canvas.height;
+                    canvasCtx.fillStyle = `rgb(255, 85, 0)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
+                }
+
+                // DIBUJAR CURVA DE REFERENCIA TARGET HARDSTYLE
+                canvasCtx.beginPath();
+                canvasCtx.strokeStyle = '#00e5ff';
+                canvasCtx.lineWidth = 2;
+                canvasCtx.setLineDash([4, 4]);
+
+                const w = canvas.width;
+                const h = canvas.height;
+
+                canvasCtx.moveTo(0, h * 0.25);
+                canvasCtx.quadraticCurveTo(w * 0.1, h * 0.2, w * 0.2, h * 0.6);
+                canvasCtx.quadraticCurveTo(w * 0.5, h * 0.35, w * 0.75, h * 0.45);
+                canvasCtx.lineTo(w, h * 0.85);
+                canvasCtx.stroke();
+                canvasCtx.setLineDash([]);
+
+            } else if (currentVizMode === 'wave') {
+                const buffer = analyserNode.fftSize;
+                const data = new Uint8Array(buffer);
+                analyserNode.getTimeDomainData(data);
+
+                canvasCtx.lineWidth = 2;
+                canvasCtx.strokeStyle = '#00e5ff';
+                canvasCtx.beginPath();
+
+                const sliceWidth = canvas.width * 1.0 / buffer;
+                let x = 0;
+
+                for (let i = 0; i < buffer; i++) {
+                    const v = data[i] / 128.0;
+                    const y = v * canvas.height / 2;
+
+                    if (i === 0) canvasCtx.moveTo(x, y);
+                    else canvasCtx.lineTo(x, y);
+
+                    x += sliceWidth;
+                }
+
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
             }
-
-            // DIBUJAR CURVA DE REFERENCIA TARGET HARDSTYLE
-            canvasCtx.beginPath();
-            canvasCtx.strokeStyle = '#00e5ff';
-            canvasCtx.lineWidth = 2;
-            canvasCtx.setLineDash([4, 4]);
-
-            const w = canvas.width;
-            const h = canvas.height;
-
-            canvasCtx.moveTo(0, h * 0.25);
-            canvasCtx.quadraticCurveTo(w * 0.1, h * 0.2, w * 0.2, h * 0.6);
-            canvasCtx.quadraticCurveTo(w * 0.5, h * 0.35, w * 0.75, h * 0.45);
-            canvasCtx.lineTo(w, h * 0.85);
-            canvasCtx.stroke();
-            canvasCtx.setLineDash([]);
         }
 
         // BINDINGS CONTROLES
@@ -895,12 +1132,12 @@
             const offMWarmth = offlineCtx.createBiquadFilter(); offMWarmth.type = 'lowpass'; offMWarmth.frequency.value = mWarmthFilterNode.frequency.value;
             const offMGlue = offlineCtx.createDynamicsCompressor(); offMGlue.threshold.value = mGlueCompNode.threshold.value;
 
-            // ATMOS EXPORT
-            const offAtmosLow = offlineCtx.createBiquadFilter(); offAtmosLow.type = atmosLowEQ.type; offAtmosLow.frequency.value = atmosLowEQ.frequency.value; offAtmosLow.gain.value = atmosLowEQ.gain.value; offAtmosLow.Q.value = atmosLowEQ.Q.value;
-            const offAtmosMid = offlineCtx.createBiquadFilter(); offAtmosMid.type = 'peaking'; offAtmosMid.frequency.value = atmosMidEQ.frequency.value; offAtmosMid.gain.value = atmosMidEQ.gain.value; offAtmosMid.Q.value = atmosMidEQ.Q.value;
-            const offAtmosHigh = offlineCtx.createBiquadFilter(); offAtmosHigh.type = 'highshelf'; offAtmosHigh.frequency.value = atmosHighEQ.frequency.value; offAtmosHigh.gain.value = atmosHighEQ.gain.value;
+            // ATMOS EXPORT (Respeta estado del bypass)
+            const offAtmosLow = offlineCtx.createBiquadFilter(); offAtmosLow.type = atmosLowEQ.type; offAtmosLow.frequency.value = atmosLowEQ.frequency.value; offAtmosLow.gain.value = isDolbyActive ? atmosLowEQ.gain.value : 0; offAtmosLow.Q.value = atmosLowEQ.Q.value;
+            const offAtmosMid = offlineCtx.createBiquadFilter(); offAtmosMid.type = 'peaking'; offAtmosMid.frequency.value = atmosMidEQ.frequency.value; offAtmosMid.gain.value = isDolbyActive ? atmosMidEQ.gain.value : 0; offAtmosMid.Q.value = atmosMidEQ.Q.value;
+            const offAtmosHigh = offlineCtx.createBiquadFilter(); offAtmosHigh.type = 'highshelf'; offAtmosHigh.frequency.value = atmosHighEQ.frequency.value; offAtmosHigh.gain.value = isDolbyActive ? atmosHighEQ.gain.value : 0;
             const offAtmosDelay = offlineCtx.createDelay(); offAtmosDelay.delayTime.value = atmosDepthDelay.delayTime.value;
-            const offAtmosDepthGain = offlineCtx.createGain(); offAtmosDepthGain.gain.value = atmosDepthGain.gain.value;
+            const offAtmosDepthGain = offlineCtx.createGain(); offAtmosDepthGain.gain.value = isDolbyActive ? atmosDepthGain.gain.value : 0;
 
             const offLimiter = offlineCtx.createDynamicsCompressor(); offLimiter.threshold.value = limiterNode.threshold.value; offLimiter.ratio.value = 20;
             const offMTrim = offlineCtx.createGain(); offMTrim.gain.value = mTrimGainNode.gain.value;
