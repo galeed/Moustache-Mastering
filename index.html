@@ -152,7 +152,6 @@
         .toggle-btn.active { background: #202533; color: var(--text-main); border-color: var(--accent-cyan); }
         .toggle-btn.active.hardstyle-tab { border-color: var(--accent-orange); }
         .toggle-btn.active.atmos-tab { border-color: var(--accent-purple); }
-        .toggle-btn.active.synth-tab { border-color: var(--accent-green); }
 
         .dsp-section { display: none; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; flex: 1; }
         .dsp-section.visible { display: grid; }
@@ -160,7 +159,6 @@
         .strip-header { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: var(--accent-cyan); border-bottom: 1px solid var(--panel-border); padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center;}
         .strip-header.hard { color: var(--accent-orange); }
         .strip-header.atmos { color: var(--accent-purple); }
-        .strip-header.synth { color: var(--accent-green); }
         
         .controls-matrix { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .fader-cell { display: flex; flex-direction: column; gap: 2px; }
@@ -193,14 +191,6 @@
 
         .midi-status-pill { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; background: #1c202b; border: 1px solid var(--panel-border); color: var(--text-muted); }
         .midi-status-pill.connected { color: var(--accent-green); border-color: var(--accent-green); background: rgba(0,255,102,0.1); }
-
-        /* TECLADO VIRTUAL SYNTH */
-        .synth-keyboard { display: flex; gap: 4px; justify-content: center; margin-top: 10px; }
-        .key-btn {
-            background: #1f2430; border: 1px solid var(--panel-border); color: var(--text-main);
-            padding: 15px 10px; font-weight: bold; border-radius: 0 0 6px 6px; cursor: pointer; flex: 1; text-align: center;
-        }
-        .key-btn:active { background: var(--accent-green); color: #000; }
 
         .transport-strip { background: #13151b; border: 1px solid var(--panel-border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; position: sticky; bottom: 0; z-index: 100; }
         .btn-play { width: 42px; height: 42px; border-radius: 50%; background: var(--accent-cyan); color: #000; border: none; font-size: 1rem; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -343,7 +333,6 @@
         <button class="toggle-btn active" id="tab-classic" onclick="switchTab('classic')">EFECTOS CLÁSICOS</button>
         <button class="toggle-btn atmos-tab" id="tab-atmos" onclick="switchTab('atmos')">SPATIAL & ATMOS</button>
         <button class="toggle-btn hardstyle-tab" id="tab-hardstyle" onclick="switchTab('hardstyle')">HARDSTYLE PRO</button>
-        <button class="toggle-btn synth-tab" id="tab-synth" onclick="switchTab('synth')">SINTETIZADOR SYNTH</button>
     </div>
 
     <!-- SECTION 1: EFECTOS CLÁSICOS & WEB MIDI -->
@@ -442,51 +431,6 @@
         </div>
     </div>
 
-    <!-- SECTION 4: SINTETIZADOR & MOTOR MONOFÓNICO -->
-    <div class="dsp-section" id="sec-synth">
-        <div class="channel-strip synth">
-            <div class="strip-header synth">SINTETIZADOR - CONTROLES PRINCIPALES</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Glide / Portamento <span class="fader-val" id="v-synth-glide">0.05s</span></div>
-                    <input type="range" id="s-glide" min="0" max="0.5" value="0.05" step="0.01">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Ruido Blanco <span class="fader-val" id="v-synth-noise">20%</span></div>
-                    <input type="range" id="s-noise" min="0" max="1" value="0.2" step="0.01">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip synth">
-            <div class="strip-header synth">MODULADOR LFO</div>
-            <div class="controls-matrix">
-                <div class="fader-cell">
-                    <div class="fader-label">Velocidad LFO <span class="fader-val" id="v-synth-lfo-rate">5 Hz</span></div>
-                    <input type="range" id="s-lfo-rate" min="0.1" max="20" value="5" step="0.1">
-                </div>
-                <div class="fader-cell">
-                    <div class="fader-label">Intensidad LFO <span class="fader-val" id="v-synth-lfo-depth">300</span></div>
-                    <input type="range" id="s-lfo-depth" min="0" max="2000" value="300" step="10">
-                </div>
-            </div>
-        </div>
-
-        <div class="channel-strip synth" style="grid-column: span 2;">
-            <div class="strip-header synth">TECLADO MONOFÓNICO VIRTUAL</div>
-            <div class="synth-keyboard">
-                <button class="key-btn" onclick="triggerSynthNote(130.81)">C3</button>
-                <button class="key-btn" onclick="triggerSynthNote(146.83)">D3</button>
-                <button class="key-btn" onclick="triggerSynthNote(164.81)">E3</button>
-                <button class="key-btn" onclick="triggerSynthNote(174.61)">F3</button>
-                <button class="key-btn" onclick="triggerSynthNote(196.00)">G3</button>
-                <button class="key-btn" onclick="triggerSynthNote(220.00)">A3</button>
-                <button class="key-btn" onclick="triggerSynthNote(246.94)">B3</button>
-                <button class="key-btn" onclick="triggerSynthNote(261.63)">C4</button>
-            </div>
-        </div>
-    </div>
-
     <div class="transport-strip">
         <button class="btn-play" id="play-btn" disabled>▶</button>
         <input type="range" id="seek-bar" value="0" min="0" max="100" disabled style="flex:1;">
@@ -522,128 +466,8 @@
         // WEB MIDI & WASM ENGINE STATE
         let midiAccess = null;
         let wasmWorkletNode = null;
-        let currentVizMode = 'fft';
+        let currentVizMode = 'fft'; // 'fft' | 'wave'
         let activeMidiOscillators = {};
-
-        // CLASE MOTOR AUDIO ENGINE (SINTETIZADOR)
-        class AudioEngine {
-            constructor() {
-                this.ctx = null;
-                this.isSetup = false;
-                
-                this.params = {
-                    glideTime: 0.05,
-                    cutoff: 1000,
-                    lfoRate: 5,
-                    lfoDepth: 300,
-                    noiseLevel: 0.2
-                };
-            }
-
-            init(context) {
-                if (this.isSetup) return;
-                this.ctx = context;
-
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-
-                this.filter = this.ctx.createBiquadFilter();
-                this.filter.type = 'lowpass';
-                this.filter.frequency.setValueAtTime(this.params.cutoff, this.ctx.currentTime);
-
-                this.lfo = this.ctx.createOscillator();
-                this.lfoGain = this.ctx.createGain();
-                this.lfo.frequency.setValueAtTime(this.params.lfoRate, this.ctx.currentTime);
-                this.lfoGain.gain.setValueAtTime(this.params.lfoDepth, this.ctx.currentTime);
-
-                this.lfo.connect(this.lfoGain);
-                this.lfoGain.connect(this.filter.frequency);
-                this.lfo.start();
-
-                this.mainOsc = this.ctx.createOscillator();
-                this.mainOsc.type = 'sawtooth';
-                this.mainOscGain = this.ctx.createGain();
-                this.mainOsc.start();
-
-                this.noiseBuffer = this.createNoiseBuffer();
-                this.noiseSource = this.ctx.createBufferSource();
-                this.noiseSource.buffer = this.noiseBuffer;
-                this.noiseSource.loop = true;
-                this.noiseGain = this.ctx.createGain();
-                this.noiseGain.gain.setValueAtTime(this.params.noiseLevel, this.ctx.currentTime);
-                this.noiseSource.start();
-
-                this.mainOsc.connect(this.mainOscGain);
-                this.mainOscGain.connect(this.filter);
-
-                this.noiseSource.connect(this.noiseGain);
-                this.noiseGain.connect(this.filter);
-
-                this.filter.connect(this.masterGain);
-
-                // Enlace a la cadena DSP de la consola
-                if (typeof inputGainNode !== 'undefined') {
-                    this.masterGain.connect(inputGainNode);
-                } else {
-                    this.masterGain.connect(this.ctx.destination);
-                }
-
-                this.isSetup = true;
-            }
-
-            createNoiseBuffer() {
-                const bufferSize = this.ctx.sampleRate * 2;
-                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-                const output = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    output[i] = Math.random() * 2 - 1;
-                }
-                return buffer;
-            }
-
-            playNote(targetFreq) {
-                if (!this.isSetup) this.init(audioCtx);
-                if (this.ctx.state === 'suspended') this.ctx.resume();
-
-                const now = this.ctx.currentTime;
-                this.mainOsc.frequency.cancelScheduledValues(now);
-
-                if (this.params.glideTime > 0) {
-                    this.mainOsc.frequency.setTargetAtTime(targetFreq, now, this.params.glideTime);
-                } else {
-                    this.mainOsc.frequency.setValueAtTime(targetFreq, now);
-                }
-            }
-
-            updateParam(key, value) {
-                this.params[key] = value;
-                const now = this.ctx ? this.ctx.currentTime : 0;
-
-                if (!this.isSetup) return;
-
-                switch (key) {
-                    case 'cutoff':
-                        this.filter.frequency.setTargetAtTime(value, now, 0.01);
-                        break;
-                    case 'lfoRate':
-                        this.lfo.frequency.setTargetAtTime(value, now, 0.01);
-                        break;
-                    case 'lfoDepth':
-                        this.lfoGain.gain.setTargetAtTime(value, now, 0.01);
-                        break;
-                    case 'noiseLevel':
-                        this.noiseGain.gain.setTargetAtTime(value, now, 0.01);
-                        break;
-                }
-            }
-        }
-
-        const synth = new AudioEngine();
-
-        async function triggerSynthNote(freq) {
-            await ensureAudioContext();
-            synth.playNote(freq);
-        }
 
         const canvas = document.getElementById('spectrum');
         const canvasCtx = canvas.getContext('2d');
@@ -654,9 +478,9 @@
         document.getElementById('btn-close-modal').addEventListener('click', () => controlsModal.classList.remove('active'));
 
         function switchTab(tab) {
-            ['classic', 'atmos', 'hardstyle', 'synth'].forEach(t => {
+            ['classic', 'atmos', 'hardstyle'].forEach(t => {
                 document.getElementById('sec-' + t).classList.remove('visible');
-                document.getElementById('tab-' + t).classList.remove('active');
+                document.getElementById('tab-' + t).classList.add('active');
             });
             document.getElementById('sec-' + tab).classList.add('visible');
             document.getElementById('tab-' + tab).classList.add('active');
@@ -677,10 +501,6 @@
                 await initWasmWorkletEngine();
             }
             if (audioCtx.state === 'suspended') await audioCtx.resume();
-            
-            if (!synth.isSetup) {
-                synth.init(audioCtx);
-            }
         }
 
         // INTEGRACIÓN WEBAUDIO WORKLET / WASM ENGINE
@@ -707,6 +527,7 @@
                 const url = URL.createObjectURL(blob);
                 await audioCtx.audioWorklet.addModule(url);
                 wasmWorkletNode = new AudioWorkletNode(audioCtx, 'wasm-dsp-processor');
+                console.log("Módulo Wasm / AudioWorklet cargado con éxito.");
             } catch (e) {
                 console.warn("AudioWorklet no disponible, utilizando procesador nativo WebAudio.", e);
             }
@@ -759,7 +580,9 @@
             const command = status >> 4;
             
             if (command === 9 && velocity > 0) {
-                synth.playNote(midiNoteToFreq(note));
+                playMidiTone(note, velocity);
+            } else if (command === 8 || (command === 9 && velocity === 0)) {
+                stopMidiTone(note);
             } else if (command === 11) {
                 if (note === 7) {
                     inputGainNode.gain.value = velocity / 127;
@@ -769,6 +592,37 @@
 
         function midiNoteToFreq(note) {
             return 440 * Math.pow(2, (note - 69) / 12);
+        }
+
+        function playMidiTone(note, velocity) {
+            if (activeMidiOscillators[note]) stopMidiTone(note);
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.value = midiNoteToFreq(note);
+            
+            const velGain = (velocity / 127) * 0.3;
+            gain.gain.setValueAtTime(velGain, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+
+            osc.connect(gain);
+            gain.connect(inputGainNode);
+            
+            osc.start();
+            activeMidiOscillators[note] = { osc, gain };
+        }
+
+        function stopMidiTone(note) {
+            if (activeMidiOscillators[note]) {
+                const { osc, gain } = activeMidiOscillators[note];
+                gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+                setTimeout(() => {
+                    try { osc.stop(); osc.disconnect(); } catch(e){}
+                }, 50);
+                delete activeMidiOscillators[note];
+            }
         }
 
         function setupDSPChain() {
@@ -815,11 +669,11 @@
             atmosHighEQ = audioCtx.createBiquadFilter(); atmosHighEQ.type = 'highshelf'; atmosHighEQ.frequency.value = 10000;
             
             atmosDepthDelay = audioCtx.createDelay(); atmosDepthDelay.delayTime.value = 0.025;
-            atmosDepthGain = audioCtx.createGain(); atmosDepthGain.gain.value = 0.0;
+            atmosDepthGain = audioCtx.createGain(); atmosDepthGain.gain.value = 0.0; // Desactivado inicialmente
             
             analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 2048;
 
-            // MEDIDOR LUFS
+            // MEDIDOR LUFS (Filtros de Ponderación K-Weighting ITU-R BS.1770)
             lufsHighPassFilter = audioCtx.createBiquadFilter(); lufsHighPassFilter.type = 'highpass'; lufsHighPassFilter.frequency.value = 38;
             lufsKWeightFilter = audioCtx.createBiquadFilter(); lufsKWeightFilter.type = 'highshelf'; lufsKWeightFilter.frequency.value = 1500; lufsKWeightFilter.gain.value = 4;
             lufsScriptNode = audioCtx.createScriptProcessor(2048, 2, 2);
@@ -907,6 +761,7 @@
 
             analyserNode.connect(audioCtx.destination);
 
+            // Iniciar con Dolby en OFF por defecto
             applyDolbyProfile('standard');
             setDolbyBypass(false);
         }
@@ -930,6 +785,7 @@
                 btn.textContent = 'DOLBY: OFF';
                 btn.classList.remove('btn-purple-active');
                 wrapper.classList.add('disabled');
+                // En modo OFF se resetean temporalmente las ganancias DSP Dolby a plano (bypass)
                 if (atmosLowEQ) {
                     atmosLowEQ.gain.value = 0;
                     atmosMidEQ.gain.value = 0;
@@ -939,6 +795,7 @@
             }
         }
 
+        // ACTUALIZACIÓN DE MEDIDORES LUFS Y TRUE PEAK
         function updateLUFSUI() {
             const stEl = document.getElementById('val-lufs-st');
             const intEl = document.getElementById('val-lufs-int');
@@ -961,6 +818,7 @@
             else tpEl.className = "meter-value";
         }
 
+        // CLIPPER PROGRESIVO CON CURVAS SELECCIONABLES
         function updateClipperCurve() {
             if (!hardClipperNode) return;
             const driveDb = parseFloat(document.getElementById('clip-drive').value);
@@ -995,6 +853,7 @@
             hardClipperNode.curve = curve;
         }
 
+        // DOLBY ATMOS PROFILES LOGIC
         function applyDolbyProfile(profile) {
             currentDolbyProfile = profile;
             document.querySelectorAll('.dolby-card').forEach(c => c.classList.remove('active'));
@@ -1041,6 +900,7 @@
             node.curve = curve;
         }
 
+        // BOTÓN PRUEBA A/B CON GAIN MATCHING AUTOMÁTICO
         document.getElementById('btn-toggle-ab').addEventListener('click', () => {
             isABDryActive = !isABDryActive;
             const btn = document.getElementById('btn-toggle-ab');
@@ -1059,6 +919,7 @@
             }
         });
 
+        // BOTÓN CONMUTADOR MONO (PHASE CHECK)
         document.getElementById('btn-toggle-mono').addEventListener('click', () => {
             isMonoActive = !isMonoActive;
             const btn = document.getElementById('btn-toggle-mono');
@@ -1076,6 +937,7 @@
             }
         });
 
+        // REPRODUCTOR
         document.getElementById('btn-load-file').addEventListener('click', async () => {
             await ensureAudioContext();
             document.getElementById('audio-input').click();
@@ -1123,6 +985,7 @@
             requestAnimationFrame(updateProgress);
         }
 
+        // MOTOR DUAL DE VISUALIZACIÓN CANVAS 2D (FFT / OSCILOSCOPIO WAVEFORM)
         function drawSpectrum() {
             if (!analyserNode) return; 
             requestAnimationFrame(drawSpectrum);
@@ -1146,6 +1009,7 @@
                     x += barWidth + 1;
                 }
 
+                // DIBUJAR CURVA DE REFERENCIA TARGET HARDSTYLE
                 canvasCtx.beginPath();
                 canvasCtx.strokeStyle = '#00e5ff';
                 canvasCtx.lineWidth = 2;
@@ -1188,29 +1052,7 @@
             }
         }
 
-        // BINDINGS CONTROLES SINTETIZADOR
-        document.getElementById('s-glide').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            synth.updateParam('glideTime', val);
-            document.getElementById('v-synth-glide').textContent = val.toFixed(2) + 's';
-        });
-        document.getElementById('s-noise').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            synth.updateParam('noiseLevel', val);
-            document.getElementById('v-synth-noise').textContent = Math.round(val * 100) + '%';
-        });
-        document.getElementById('s-lfo-rate').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            synth.updateParam('lfoRate', val);
-            document.getElementById('v-synth-lfo-rate').textContent = val.toFixed(1) + ' Hz';
-        });
-        document.getElementById('s-lfo-depth').addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            synth.updateParam('lfoDepth', val);
-            document.getElementById('v-synth-lfo-depth').textContent = val.toFixed(0);
-        });
-
-        // BINDINGS GENERALES
+        // BINDINGS CONTROLES
         document.getElementById('m-lufs').addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             document.getElementById('vm-lufs').textContent = val.toFixed(1);
@@ -1226,6 +1068,7 @@
         document.getElementById('sat').addEventListener('input', (e) => { updateSaturationCurve(saturatorNode, e.target.value); document.getElementById('v-sat').textContent = e.target.value + ' %'; });
         document.getElementById('thresh').addEventListener('input', (e) => { compressorNode.threshold.value = e.target.value; document.getElementById('v-thresh').textContent = e.target.value + ' dB'; });
         
+        // CLIPPER & MID-SIDE BINDINGS
         document.getElementById('clip-drive').addEventListener('input', (e) => { updateClipperCurve(); document.getElementById('v-clip').textContent = e.target.value + ' dB'; });
         document.getElementById('clip-ceil').addEventListener('input', (e) => { updateClipperCurve(); document.getElementById('v-clip-ceil').textContent = e.target.value + ' dB'; });
         document.getElementById('clip-type').addEventListener('change', (e) => { updateClipperCurve(); document.getElementById('v-clip-type').textContent = e.target.options[e.target.selectedIndex].text; });
@@ -1240,6 +1083,7 @@
             document.getElementById('v-ms-width').textContent = (e.target.value > 0 ? '+' : '') + e.target.value + ' dB'; 
         });
 
+        // OVERSAMPLING ANTI-ALIASING BINDING
         document.getElementById('m-oversampling').addEventListener('change', (e) => {
             const factor = parseInt(e.target.value);
             if (!antiAliasFilterNode) return;
@@ -1255,7 +1099,7 @@
         document.getElementById('m-air').addEventListener('input', (e) => { if(mAirFilterNode) mAirFilterNode.gain.value = (e.target.value * 0.08); document.getElementById('vm-air').textContent = e.target.value + '%'; });
         document.getElementById('m-lowclean').addEventListener('input', (e) => { if(mLowCleanFilterNode) mLowCleanFilterNode.frequency.value = 20 + (e.target.value * 0.6); document.getElementById('vm-lowclean').textContent = e.target.value + '%'; });
 
-        // EXPORTADOR CON RENDERIZADO OFFLINE
+        // EXPORTADOR CON RENDERIZADO OFFLINE PRO
         document.getElementById('export-btn').addEventListener('click', async () => {
             if (!audioBuffer) return;
             const targetSampleRate = parseInt(document.getElementById('export-sample-rate').value);
@@ -1271,6 +1115,7 @@
             const offSat = offlineCtx.createWaveShaper(); offSat.curve = saturatorNode.curve;
             const offComp = offlineCtx.createDynamicsCompressor(); offComp.threshold.value = compressorNode.threshold.value;
 
+            // Off Clipper & MidSide
             const offClipper = offlineCtx.createWaveShaper(); offClipper.curve = hardClipperNode.curve;
             const offAntiAlias = offlineCtx.createBiquadFilter(); offAntiAlias.type = 'lowpass'; offAntiAlias.frequency.value = antiAliasFilterNode.frequency.value;
 
@@ -1287,6 +1132,7 @@
             const offMWarmth = offlineCtx.createBiquadFilter(); offMWarmth.type = 'lowpass'; offMWarmth.frequency.value = mWarmthFilterNode.frequency.value;
             const offMGlue = offlineCtx.createDynamicsCompressor(); offMGlue.threshold.value = mGlueCompNode.threshold.value;
 
+            // ATMOS EXPORT (Respeta estado del bypass)
             const offAtmosLow = offlineCtx.createBiquadFilter(); offAtmosLow.type = atmosLowEQ.type; offAtmosLow.frequency.value = atmosLowEQ.frequency.value; offAtmosLow.gain.value = isDolbyActive ? atmosLowEQ.gain.value : 0; offAtmosLow.Q.value = atmosLowEQ.Q.value;
             const offAtmosMid = offlineCtx.createBiquadFilter(); offAtmosMid.type = 'peaking'; offAtmosMid.frequency.value = atmosMidEQ.frequency.value; offAtmosMid.gain.value = isDolbyActive ? atmosMidEQ.gain.value : 0; offAtmosMid.Q.value = atmosMidEQ.Q.value;
             const offAtmosHigh = offlineCtx.createBiquadFilter(); offAtmosHigh.type = 'highshelf'; offAtmosHigh.frequency.value = atmosHighEQ.frequency.value; offAtmosHigh.gain.value = isDolbyActive ? atmosHighEQ.gain.value : 0;
@@ -1301,12 +1147,14 @@
             offSource.connect(offGain); offGain.connect(offHpf); offHpf.connect(offLs); offLs.connect(offMid);
             offMid.connect(offHs); offHs.connect(offSat); offSat.connect(offComp);
             
+            // MidSide Offline Chain
             offComp.connect(offMsSplitter);
             offMsSplitter.connect(offMsSubL, 0); offMsSplitter.connect(offMsSubR, 1);
             offMsSubL.connect(offMsMerger, 0, 0); offMsSubR.connect(offMsMerger, 0, 1);
             offComp.connect(offMsHighSide); offMsHighSide.connect(offMsSideGain);
             offMsSideGain.connect(offMsMerger, 0, 0); offMsSideGain.connect(offMsMerger, 0, 1);
 
+            // Clipper & AntiAlias
             offMsMerger.connect(offClipper); offClipper.connect(offAntiAlias);
             
             offAntiAlias.connect(offMLowClean); offMLowClean.connect(offMClarity); offMClarity.connect(offMAir);
